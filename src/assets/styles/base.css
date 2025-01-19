@@ -4,3 +4,7 @@ html, body {
   padding: 0;
   font-family: Arial, sans-serif;
 }
+.router-link-active {
+  color: var(--primary-color);
+  font-weight: bold;
+}

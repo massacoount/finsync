@@ -1,12 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import Dashboard from '../pages/dashboard/Dashboard.vue';
-import Login from '../pages/auth/Login.vue';
-import Register from '../pages/auth/Register.vue';
+import authRoutes from './routes/authRoutes';
+import dashboardRoutes from './routes/dashboardRoutes';
 
 const routes = [
-  { path: '/', component: Dashboard },
-  { path: '/login', component: Login },
-  { path: '/register', component: Register },
+  ...authRoutes,
+  ...dashboardRoutes,
 ];
 
 const router = createRouter({
@@ -14,4 +12,4 @@ const router = createRouter({
   routes,
 });
 
-export default router;// Vue Router configuration
+export default router;
