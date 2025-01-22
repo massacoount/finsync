@@ -109,6 +109,13 @@ The Budget Tracking Tool is a web application that allows users to manage their 
 ## Activity Diagram
 Here is the activity diagram showing the flow of user interactions with the fin-sync
 ```mermaid
+---
+config:
+  look: handDrawn
+  theme: neutral
+  class:
+    hideEmptyMembersBox: true
+---
 graph TD
     Start --> Login
     Login -->|Success| Dashboard
@@ -133,6 +140,13 @@ graph TD
 
 The following sequence diagram shows the interactions between the user, frontend, and backend
 ```mermaid
+---
+config:
+  look: handDrawn
+  theme: neutral
+  class:
+    hideEmptyMembersBox: true
+---
 sequenceDiagram
     participant User
     participant Frontend
