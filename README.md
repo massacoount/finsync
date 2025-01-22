@@ -75,36 +75,89 @@ The Budget Tracking Tool is a web application that allows users to manage their 
 ### Database Schema (Appwrite)
 
 #### **Collections:**
-1.  **Categories**
-    -   `id` (string, primary key)
-    -   `name` (string)
-    -   `type` (enum: "income", "expense")
-    -   `notes` (string, optional)
+```mermaid
+---
+config:
+  look: handDrawn
+  theme: neutral
+  class:
+    hideEmptyMembersBox: true
+---
+erDiagram
+    Categories {
+        string id PK
+        string name
+        enum type 
+        string notes
+    }
+    
+    Transactions {
+        string id PK
+        date date
+        float amount
+        string category_id FK
+        string account_id FK
+        string description
+    }
+    
+    Revenue {
+        string id PK
+        date date
+        float amount
+        string source
+        string category_id FK
+        string notes
+    }
+    
+    Expenses {
+        string id PK
+        date date
+        float amount
+        string category_id FK
+        string description
+    }
+    
+    BudgetTargets {
+        string id PK
+        string category_id FK
+        float monthly_target
+        string notes
+    }
+    
+    Accounts {
+        string id PK
+        string name
+        enum account_type 
+        string description
+    }
 
-2.  **Expenses**
-    -   `id` (string, primary key)
-    -   `date` (date)
-    -   `amount` (float)
-    -   `category_id` (string, foreign key to Categories)
-    -   `description` (string)
+    Users {
+        string user_id PK
+        string email
+        string password
+    }
+    
+    Journals {
+        string id PK
+        date date
+        string journal_entry
+        string transaction_id FK
+    }
 
-3.  **Income**
-    -   `id` (string, primary key)
-    -   `date` (date)
-    -   `amount` (float)
-    -   `source` (string)
-    -   `notes` (string, optional)
-
-4.  **BudgetTargets**
-    -   `id` (string, primary key)
-    -   `category_id` (string, foreign key to Categories)
-    -   `monthly_target` (float)
-    -   `notes` (string, optional)
-
-5.  **Users** (Managed by Appwrite authentication)
-    -   `user_id` (string)
-    -   `email` (string)
-    -   `password` (string)
+    Categories ||--o| Revenue : has
+    Categories ||--o| Expenses : has
+    Categories ||--o| BudgetTargets : has
+    Categories ||--o| Transactions : has
+    Revenue }|..|{ Categories : belongs_to
+    Expenses }|..|{ Categories : belongs_to
+    Transactions }|..|{ Categories : belongs_to
+    Transactions ||--o| Accounts : affects
+    Accounts ||--o| Transactions : involved_in
+    Journals ||--o| Transactions : records
+    BudgetTargets }|..|{ Categories : belongs_to
+    Users ||--o| Transactions : makes
+    Users ||--o| Journals : makes
+```
 
 ## Activity Diagram
 Here is the activity diagram showing the flow of user interactions with the fin-sync
