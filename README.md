@@ -90,40 +90,16 @@ erDiagram
         enum type 
         string notes
     }
-    
+
     Transactions {
         string id PK
         date date
         float amount
-        string category_id FK
-        string account_id FK
         string description
-    }
-    
-    Revenue {
-        string id PK
-        date date
-        float amount
-        string source
+        string user_id FK
         string category_id FK
-        string notes
     }
-    
-    Expenses {
-        string id PK
-        date date
-        float amount
-        string category_id FK
-        string description
-    }
-    
-    BudgetTargets {
-        string id PK
-        string category_id FK
-        float monthly_target
-        string notes
-    }
-    
+
     Accounts {
         string id PK
         string name
@@ -136,7 +112,7 @@ erDiagram
         string email
         string password
     }
-    
+
     Journals {
         string id PK
         date date
@@ -144,19 +120,19 @@ erDiagram
         string transaction_id FK
     }
 
-    Categories ||--o| Revenue : has
-    Categories ||--o| Expenses : has
-    Categories ||--o| BudgetTargets : has
-    Categories ||--o| Transactions : has
-    Revenue }|..|{ Categories : belongs_to
-    Expenses }|..|{ Categories : belongs_to
-    Transactions }|..|{ Categories : belongs_to
+    BudgetTargets {
+        string id PK
+        string category_id FK
+        float monthly_target
+        string notes
+    }
+
+    Transactions ||--o| Categories : categorizes
     Transactions ||--o| Accounts : affects
-    Accounts ||--o| Transactions : involved_in
+    Transactions ||--o| Users : made_by
     Journals ||--o| Transactions : records
-    BudgetTargets }|..|{ Categories : belongs_to
+    Categories ||--o| BudgetTargets : has
     Users ||--o| Transactions : makes
-    Users ||--o| Journals : makes
 ```
 
 ## Activity Diagram
