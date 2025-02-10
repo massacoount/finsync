@@ -75,48 +75,76 @@ The Budget Tracking Tool is a web application that allows users to manage their 
 ### Database Schema (Appwrite)
 
 #### **Collections:**
-1.  **Categories**
-    -   `id` (string, primary key)
-    -   `name` (string)
-    -   `type` (enum: "income", "expense", "asset", "liability", "equity")
-    -   `notes` (string, optional)
+```mermaid
+---
+config:
+  look: handDrawn
+  theme: neutral
+  class:
+    hideEmptyMembersBox: true
+---
+erDiagram
+    Categories {
+        string id PK
+        string name
+        enum type 
+        string notes
+    }
 
-2.  **Expenses**
-    -   `id` (string, primary key)
-    -   `date` (date)
-    -   `amount` (float)
-    -   `category_id` (string, foreign key to Categories)
-    -   `description` (string)
+    Transactions {
+        string id PK
+        date date
+        float amount
+        string description
+        string user_id FK
+        string category_id FK
+    }
 
-3.  **Income**
-    -   `id` (string, primary key)
-    -   `date` (date)
-    -   `amount` (float)
-    -   `source` (string)
-    -   `notes` (string, optional)
+    Accounts {
+        string id PK
+        string name
+        enum account_type 
+        string description
+    }
 
-4.  **BudgetTargets**
-    -   `id` (string, primary key)
-    -   `category_id` (string, foreign key to Categories)
-    -   `monthly_target` (float)
-    -   `notes` (string, optional)
+    Users {
+        string user_id PK
+        string email
+        string password
+    }
 
-5.  **Transactions**
-    -   `id` (string, primary key)
-    -   `date` (date)
-    -   `amount` (float)
-    -   `description` (string)
-    -   `debit_category_id` (string, foreign key to Categories)
-    -   `credit_category_id` (string, foreign key to Categories)
+    Journals {
+        string id PK
+        date date
+        string journal_entry
+        string transaction_id FK
+    }
 
-6.  **Users** (Managed by Appwrite authentication)
-    -   `user_id` (string)
-    -   `email` (string)
-    -   `password` (string)
+    BudgetTargets {
+        string id PK
+        string category_id FK
+        float monthly_target
+        string notes
+    }
+
+    Transactions ||--o| Categories : categorizes
+    Transactions ||--o| Accounts : affects
+    Transactions ||--o| Users : made_by
+    Journals ||--o| Transactions : records
+    Categories ||--o| BudgetTargets : has
+    Users ||--o| Transactions : makes
+```
 
 ## Activity Diagram
 Here is the activity diagram showing the flow of user interactions with the fin-sync
 ```mermaid
+---
+config:
+  look: handDrawn
+  theme: neutral
+  class:
+    hideEmptyMembersBox: true
+---
 graph TD
     Start --> Login
     Login -->|Success| Dashboard
@@ -141,6 +169,13 @@ graph TD
 
 The following sequence diagram shows the interactions between the user, frontend, and backend
 ```mermaid
+---
+config:
+  look: handDrawn
+  theme: neutral
+  class:
+    hideEmptyMembersBox: true
+---
 sequenceDiagram
     participant User
     participant Frontend
