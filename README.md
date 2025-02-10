@@ -78,7 +78,7 @@ The Budget Tracking Tool is a web application that allows users to manage their 
 1.  **Categories**
     -   `id` (string, primary key)
     -   `name` (string)
-    -   `type` (enum: "income", "expense")
+    -   `type` (enum: "income", "expense", "asset", "liability", "equity")
     -   `notes` (string, optional)
 
 2.  **Expenses**
@@ -101,7 +101,15 @@ The Budget Tracking Tool is a web application that allows users to manage their 
     -   `monthly_target` (float)
     -   `notes` (string, optional)
 
-5.  **Users** (Managed by Appwrite authentication)
+5.  **Transactions**
+    -   `id` (string, primary key)
+    -   `date` (date)
+    -   `amount` (float)
+    -   `description` (string)
+    -   `debit_category_id` (string, foreign key to Categories)
+    -   `credit_category_id` (string, foreign key to Categories)
+
+6.  **Users** (Managed by Appwrite authentication)
     -   `user_id` (string)
     -   `email` (string)
     -   `password` (string)

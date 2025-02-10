@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+  <div class="container mx-auto p-4">
+    <!-- Header / Navigation -->
+    <header class="flex flex-col md:flex-row items-center justify-between mb-6">
+      <nav class="flex space-x-4 mb-4 md:mb-0">
+        <a href="index.html" class="text-blue-500 hover:underline">Dashboard</a>
+        <a href="accounts.html" class="text-blue-500 hover:underline">Accounts</a>
+        <a href="transactions.html" class="text-blue-500 hover:underline">Transactions</a>
+        <a href="goals.html" class="text-blue-500 hover:underline">Goals</a>
+        <a href="record-transaction.html" class="text-blue-500 hover:underline">Record Transaction</a>
+      </nav>
+      <h1 class="text-2xl font-bold">Dashboard</h1>
+    </header>
+    
+    <!-- Account Summary Cards -->
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="bg-blue-100 p-4 rounded-lg shadow">
+        <h3 class="font-bold mb-2">Checking (USD)</h3>
+        <p>Balance: $5,000</p>
+      </div>
+      <div class="bg-green-100 p-4 rounded-lg shadow">
+        <h3 class="font-bold mb-2">Savings (EUR)</h3>
+        <p>Balance: €3,500</p>
+      </div>
+      <div class="bg-red-100 p-4 rounded-lg shadow">
+        <h3 class="font-bold mb-2">Credit Card (USD)</h3>
+        <p>Balance: -$1,200</p>
+      </div>
+      <div class="bg-yellow-100 p-4 rounded-lg shadow">
+        <h3 class="font-bold mb-2">Cash (USD)</h3>
+        <p>Balance: $300</p>
+      </div>
+    </section>
+    
+    <!-- Recent Transactions -->
+    <section class="mb-6">
+      <h2 class="text-xl font-bold mb-4">Recent Transactions</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full bg-white shadow rounded-lg">
+          <thead>
+            <tr class="bg-gray-200 text-left">
+              <th class="px-4 py-2">Date</th>
+              <th class="px-4 py-2">Description</th>
+              <th class="px-4 py-2">Account</th>
+              <th class="px-4 py-2">Amount</th>
+              <th class="px-4 py-2">Category</th>
+            </tr>
+          </thead>
+          <tbody class="text-gray-700">
+            <tr class="border-t">
+              <td class="px-4 py-2">2025-02-08</td>
+              <td class="px-4 py-2">Grocery Shopping</td>
+              <td class="px-4 py-2">Checking</td>
+              <td class="px-4 py-2">-$150.00</td>
+              <td class="px-4 py-2">Groceries</td>
+            </tr>
+            <tr class="border-t">
+              <td class="px-4 py-2">2025-02-07</td>
+              <td class="px-4 py-2">Salary Deposit</td>
+              <td class="px-4 py-2">Checking</td>
+              <td class="px-4 py-2">$2,000.00</td>
+              <td class="px-4 py-2">Income</td>
+            </tr>
+            <tr class="border-t">
+              <td class="px-4 py-2">2025-02-06</td>
+              <td class="px-4 py-2">Utility Bill</td>
+              <td class="px-4 py-2">Checking</td>
+              <td class="px-4 py-2">-$75.00</td>
+              <td class="px-4 py-2">Utilities</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    
+    <!-- Notifications -->
+    <section>
+      <h2 class="text-xl font-bold mb-4">Notifications</h2>
+      <ul class="list-disc list-inside">
+        <li>Low balance alert for Cash account.</li>
+        <li>Upcoming credit card payment due in 3 days.</li>
+      </ul>
+    </section>
+  </div>
+</body>
+</html>
