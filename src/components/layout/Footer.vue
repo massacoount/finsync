@@ -1,5 +1,5 @@
 <template>
-  <footer class="bg-white shadow-md fixed bottom-0 left-0 w-full flex justify-around py-3">
+  <footer class="bg-white shadow-md fixed bottom-0 left-0 w-full flex justify-around py-3 border-t">
     <router-link to="/" class="flex flex-col items-center text-gray-500" active-class="text-blue-500 font-bold">
       <i class="fas fa-home h-6 w-6"></i>
       <span class="text-xs">Home</span>

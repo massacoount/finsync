@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-100">
-    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+  <div class="min-h-screen flex">
+    <div class="p-8 rounded-lg w-full">
       <h2 class="text-2xl font-semibold mb-6 text-center">Add Account</h2>
       <form @submit.prevent="handleAddAccount" class="space-y-4">
         <div>

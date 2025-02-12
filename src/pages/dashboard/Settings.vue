@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-lg mx-auto bg-white shadow-md rounded-md p-6">
+  <div class="mx-auto p-6">
     <h2 class="text-2xl font-bold mb-4">Settings</h2>
     <!-- Add your settings form here -->
   </div>

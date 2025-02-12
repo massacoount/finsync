@@ -1,9 +1,16 @@
 <template>
-  <router-view />
+  <div>
+    <router-view />
+    <Notifications />
+  </div>
 </template>
 
 <script>
+import Notifications from '@/components/common/Notifications.vue';
+
 export default {
-  name: 'App',
+  components: {
+    Notifications,
+  },
 };
 </script>

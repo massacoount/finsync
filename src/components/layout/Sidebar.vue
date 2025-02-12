@@ -13,7 +13,7 @@
           </button>
         </div>
         <nav class="space-y-4">
-          <router-link to="/" class="flex items-center space-x-3 text-gray-500 hover:bg-blue-100 p-2" active-class="text-blue-500 font-bold">
+          <!-- <router-link to="/" class="flex items-center space-x-3 text-gray-500 hover:bg-blue-100 p-2" active-class="text-blue-500 font-bold">
             <i class="fas fa-home"></i>
             <span>Home</span>
           </router-link>
@@ -36,19 +36,19 @@
           <router-link to="/add-account" class="flex items-center space-x-3 text-gray-500 hover:bg-blue-100 p-2" active-class="text-blue-500 font-bold">
             <i class="fas fa-university"></i>
             <span>Add Account</span>
-          </router-link>
+          </router-link>-->
           <router-link to="/add-transaction" class="flex items-center space-x-3 text-gray-500 hover:bg-blue-100 p-2" active-class="text-blue-500 font-bold">
             <i class="fas fa-exchange-alt"></i>
             <span>Add Transaction</span>
           </router-link>
-          <router-link to="/profile" class="flex items-center space-x-3 text-gray-500 hover:bg-blue-100 p-2" active-class="text-blue-500 font-bold">
+          <!-- <router-link to="/profile" class="flex items-center space-x-3 text-gray-500 hover:bg-blue-100 p-2" active-class="text-blue-500 font-bold">
             <i class="fas fa-user"></i>
             <span>Profile</span>
           </router-link>
           <router-link to="/settings" class="flex items-center space-x-3 text-gray-500 hover:bg-blue-100 p-2" active-class="text-blue-500 font-bold">
             <i class="fas fa-cog"></i>
             <span>Settings</span>
-          </router-link>
+          </router-link>-->
         </nav>
       </div>
       <div class="mt-auto">
