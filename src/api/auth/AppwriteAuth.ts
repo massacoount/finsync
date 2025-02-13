@@ -16,7 +16,7 @@ const account = new Account(client);
 export class AppwriteAuth extends BaseAuth {
   async login(email: string, password: string): Promise<any> {
     try {
-      const response = await account.createSession(email, password);
+      const response = await account.createEmailPasswordSession(email, password);
       return response;
     } catch (error) {
       throw new Error(`Login failed: ${error.message}`);

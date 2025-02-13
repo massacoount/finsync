@@ -1,33 +1,36 @@
-import { ref } from 'vue';
-import { AuthFactory } from '@/api/auth/AuthFactory';
-import { BaseAuth } from '@/api/auth/BaseAuth';
-
+import { ref } from "vue";
+import { authService } from "@/api/authService";
 const user = ref(null);
-const authProvider: BaseAuth = AuthFactory.createAuthProvider(import.meta.env.VITE_AUTH_PROVIDER);
 
 const login = async (email: string, password: string) => {
   try {
-    await authProvider.login(email, password);
-    user.value = await authProvider.getUser();
+    await authService.login(email, password);
+    user.value = await authService.getUser();
   } catch (error) {
-    console.error('Login failed:', error);
+    console.error("Login failed:", error);
+    throw new Error(
+      "Login failed. Please check your credentials and try again."
+    );
   }
 };
 
 const logout = async () => {
   try {
-    await authProvider.logout();
+    await authService.logout();
     user.value = null;
   } catch (error) {
-    console.error('Logout failed:', error);
+    console.error("Logout failed:", error);
+    throw new Error("Logout failed. Please try again.");
   }
 };
 
 const checkAuth = async () => {
   try {
-    user.value = await authProvider.getUser();
+    user.value = await authService.getUser();
   } catch (error) {
     user.value = null;
+    console.error("Check auth failed:", error);
+    throw new Error("Failed to check authentication status.");
   }
 };
 

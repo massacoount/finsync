@@ -59,7 +59,7 @@ export default {
         addNotification('Login successful', 'success');
       } catch (error) {
         console.error('Login failed:', error);
-        addNotification('Login failed. Please check your credentials and try again.', 'error');
+        addNotification(error.message, 'error');
       }
     };
 

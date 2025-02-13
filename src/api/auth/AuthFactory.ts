@@ -3,7 +3,7 @@ import { FirebaseAuth } from './FirebaseAuth';
 import { AppwriteAuth } from './AppwriteAuth';
 
 export class AuthFactory {
-  static createAuthProvider(provider: string): BaseAuth {
+  static createAuthService(provider: string): BaseAuth {
     switch (provider) {
       case 'firebase':
         return new FirebaseAuth();

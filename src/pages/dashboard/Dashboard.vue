@@ -33,22 +33,14 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
-import { financeService } from '@/api/financeService';
+import { onMounted } from 'vue';
 import { useAuth } from '@/composables/useAuth';
+import { useFinance } from '@/composables/useFinance';
 
 export default {
   setup() {
-    const transactions = ref([]);
     const { user, checkAuth } = useAuth();
-
-    const fetchTransactions = async () => {
-      try {
-        transactions.value = await financeService.getTransactions();
-      } catch (error) {
-        console.error('Error fetching transactions:', error);
-      }
-    };
+    const { transactions, fetchTransactions } = useFinance();
 
     onMounted(async () => {
       await checkAuth();
