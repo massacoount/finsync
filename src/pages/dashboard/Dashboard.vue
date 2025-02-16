@@ -1,6 +1,6 @@
 <template>
-  <div class="dashboard">
-    <div class="p-4 rounded-xl w-full">
+  <div class="dashboard p-4">
+    <div class="rounded-xl w-full">
       <h2 class="text-lg font-semibold mb-3">Latest Transactions</h2>
       <div class="relative mb-3">
         <input
@@ -13,45 +13,140 @@
 
       <div class="space-y-4">
         <!-- Transactions List -->
-        <div v-for="transaction in transactions" :key="transaction.id" class="flex justify-between items-center py-2 border-b">
+        <div
+          v-for="transaction in transactions"
+          :key="transaction.id"
+          class="flex justify-between items-center py-2 border-b"
+          @touchstart="startTouch($event, transaction)"
+          @touchmove="moveTouch($event)"
+          @touchend="endTouch"
+        >
           <div class="flex items-center space-x-3">
             <div>
               <p class="text-sm font-semibold">{{ transaction.store }}</p>
               <p class="text-xs text-gray-500">{{ transaction.description }}</p>
-              <p class="text-xs text-gray-500">{{ transaction.date }}</p>
-              <p class="text-xs text-gray-500">From: {{ transaction.accountFrom }}</p>
-              <p class="text-xs text-gray-500">To: {{ transaction.accountTo }}</p>
+              <p class="text-xs text-gray-500">
+                {{ new Date(transaction.date).toLocaleDateString() }}
+              </p>
+              <p class="text-xs text-gray-500">
+                From: {{ transaction.accountFrom }}
+              </p>
+              <p class="text-xs text-gray-500">
+                To: {{ transaction.accountTo }}
+              </p>
             </div>
           </div>
-          <p :class="{'text-red-500': transaction.amount < 0, 'text-green-500': transaction.amount > 0}" class="font-semibold">
-            {{ transaction.amount < 0 ? '-' : '' }}${{ Math.abs(transaction.amount).toFixed(2) }}
+          <p
+            :class="{
+              'text-red-500': transaction.amount < 0,
+              'text-blue-500': transaction.amount > 0,
+            }"
+            class="font-semibold"
+          >
+            {{ transaction.amount < 0 ? "-" : "" }}${{
+              Math.abs(transaction.amount).toFixed(2)
+            }}
           </p>
         </div>
       </div>
+      <div ref="loadMoreTrigger" class="h-1"></div>
     </div>
+
+    <FloatingActionButton @action="handleFabAction" />
   </div>
 </template>
 
 <script>
-import { onMounted } from 'vue';
-import { useAuth } from '@/composables/useAuth';
-import { useFinance } from '@/composables/useFinance';
+import { onMounted, ref, watch } from "vue";
+import { useRouter } from "vue-router";
+import { useAuth } from "@/composables/useAuth";
+import { useFinance } from "@/composables/useFinance";
+import FloatingActionButton from "@/components/common/FloatingActionButton.vue";
 
 export default {
+  components: {
+    FloatingActionButton,
+  },
   setup() {
+    const router = useRouter();
     const { user, checkAuth } = useAuth();
-    const { transactions, fetchTransactions } = useFinance();
+    const { transactions, fetchTransactions, loadMoreTransactions, deleteTransaction, hasMore } = useFinance();
+    const loadMoreTrigger = ref(null);
+    const touchStartX = ref(0);
+    const touchEndX = ref(0);
+    const currentTransaction = ref(null);
+
+    const startTouch = (event, transaction) => {
+      touchStartX.value = event.changedTouches[0].screenX;
+      currentTransaction.value = transaction;
+    };
+
+    const moveTouch = (event) => {
+      touchEndX.value = event.changedTouches[0].screenX;
+    };
+
+    const endTouch = () => {
+      if (touchStartX.value - touchEndX.value > 50) {
+        // Swipe left - Edit
+        handleSwipeLeft(currentTransaction.value);
+      } else if (touchEndX.value - touchStartX.value > 50) {
+        // Swipe right - Delete
+        handleSwipeRight(currentTransaction.value);
+      }
+    };
+
+    const handleSwipeLeft = (transaction) => {
+      // Redirect to edit form
+      router.push(`/edit-transaction/${transaction.id}`);
+    };
+
+    const handleSwipeRight = (transaction) => {
+      // Show confirmation dialog for deletion
+      if (confirm("Are you sure you want to delete this transaction?")) {
+        deleteTransaction(transaction.id);
+      }
+    };
+
+    const handleFabAction = (action) => {
+      if (action === "addTransaction") {
+        router.push("/add-transaction");
+      } else if (action === "manageAccounts") {
+        router.push("/accounts");
+      }
+    };
 
     onMounted(async () => {
-      await checkAuth();
-      if (user.value) {
-        fetchTransactions();
+      const authResponse = await checkAuth();
+      if (authResponse) {
+        await fetchTransactions();
       } else {
-        console.error('User is not authenticated');
+        console.error("User is not authenticated");
       }
     });
 
-    return { transactions };
+    const observer = new IntersectionObserver(
+      async (entries) => {
+        if (entries[0].isIntersecting && hasMore.value) {
+          await loadMoreTransactions();
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    onMounted(() => {
+      if (loadMoreTrigger.value) {
+        observer.observe(loadMoreTrigger.value);
+      }
+    });
+
+    return {
+      transactions,
+      loadMoreTrigger,
+      startTouch,
+      moveTouch,
+      endTouch,
+      handleFabAction,
+    };
   },
 };
 </script>

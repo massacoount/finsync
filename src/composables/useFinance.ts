@@ -1,19 +1,28 @@
-import { ref } from 'vue';
-import { financeService } from '@/api/financeService';
+import { useFinanceStore } from '@/store/financeStore';
 
 export const useFinance = () => {
-  const transactions = ref([]);
-
-  const fetchTransactions = async () => {
-    try {
-      transactions.value = await financeService.getTransactions();
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-    }
-  };
+  const financeStore = useFinanceStore();
+  const {
+    transactions,
+    accounts,
+    fetchTransactions,
+    loadMoreTransactions,
+    fetchAccounts,
+    addTransaction,
+    editTransaction,
+    deleteTransaction,
+    hasMore,
+  } = financeStore;
 
   return {
     transactions,
+    accounts,
     fetchTransactions,
+    loadMoreTransactions,
+    fetchAccounts,
+    addTransaction,
+    editTransaction,
+    deleteTransaction,
+    hasMore,
   };
 };

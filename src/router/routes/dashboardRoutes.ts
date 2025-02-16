@@ -6,7 +6,7 @@ import AddIncome from '@/components/finance/AddIncome.vue';
 import BudgetTarget from '@/components/finance/BudgetTarget.vue';
 import BankImport from '@/components/finance/BankImport.vue';
 import AddAccount from '@/components/finance/AddAccount.vue';
-import AddTransaction from '@/components/finance/AddTransaction.vue';
+import AddTransaction from '@/pages/finance/AddTransaction.vue';
 import Settings from '@/pages/dashboard/Settings.vue';
 import Profile from '@/pages/dashboard/Profile.vue';
 

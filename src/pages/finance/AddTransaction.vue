@@ -94,7 +94,8 @@
 
 <script>
 import { ref, onMounted } from "vue";
-import { financeService } from "@/api/financeService";
+import { useFinance } from "@/composables/useFinance";
+import { useNotifications } from "@/composables/useNotifications";
 
 export default {
   setup() {
@@ -103,7 +104,8 @@ export default {
     const debitAccount = ref("");
     const creditAccount = ref("");
     const amount = ref("");
-    const accounts = ref([]);
+    const { accounts, fetchAccounts, addTransaction } = useFinance();
+    const { addNotification } = useNotifications();
 
     const handleAddTransaction = async () => {
       try {
@@ -114,19 +116,11 @@ export default {
           credit_account_id: creditAccount.value,
           amount: amount.value,
         };
-        await financeService.addTransaction(transactionData);
-        alert("Transaction added successfully");
+        await addTransaction(transactionData);
+        addNotification("Transaction added successfully", "success");
       } catch (error) {
         console.error("Error adding transaction:", error);
-        alert("Failed to add transaction");
-      }
-    };
-
-    const fetchAccounts = async () => {
-      try {
-        accounts.value = await financeService.getAccounts();
-      } catch (error) {
-        console.error("Error fetching accounts:", error);
+        addNotification("Failed to add transaction", "error");
       }
     };
 

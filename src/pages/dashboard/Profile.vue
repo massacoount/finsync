@@ -15,12 +15,16 @@
 </template>
 
 <script>
+import { useAuth } from '@/composables/useAuth';
+
 export default {
   name: "Profile",
-  methods: {
-    logout() {
-      this.$router.push("/auth/login");
-    },
+  setup() {
+    const { logout } = useAuth();
+
+    return {
+      logout,
+    };
   },
 };
 </script>
