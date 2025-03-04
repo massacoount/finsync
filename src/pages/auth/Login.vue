@@ -41,13 +41,11 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '@/composables/useAuth';
-import { useNotifications } from '@/composables/useNotifications';
 
 export default {
   setup() {
     const router = useRouter();
     const { login } = useAuth();
-    const { addNotification } = useNotifications();
     const email = ref('');
     const password = ref('');
 
@@ -56,10 +54,8 @@ export default {
         await login(email.value, password.value);
         // Redirect to dashboard or another page after successful login
         router.push('/');
-        addNotification('Login successful', 'success');
       } catch (error) {
         console.error('Login failed:', error);
-        addNotification(error.message, 'error');
       }
     };
 
