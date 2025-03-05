@@ -5,7 +5,6 @@ const client = new Client();
 const {
   VITE_APPWRITE_ENDPOINT,
   VITE_APPWRITE_PROJECT_ID,
-  VITE_APPWRITE_API_KEY,
 } = import.meta.env;
 
 client
@@ -26,9 +25,6 @@ export class AppwriteFinanceService extends BaseFinanceService {
       DATABASE_ID,
       TRANSACTIONS_COLLECTION_ID,
       [Query.orderDesc("date"), Query.limit(limit), Query.offset(offset)],
-      {
-        "X-Appwrite-Key": VITE_APPWRITE_API_KEY,
-      }
     );
     return transactions.documents;
   }
@@ -45,9 +41,6 @@ export class AppwriteFinanceService extends BaseFinanceService {
       TRANSACTIONS_COLLECTION_ID,
       ID.unique(),
       transactionData,
-      {
-        "X-Appwrite-Key": VITE_APPWRITE_API_KEY,
-      }
     );
     return addTransactionResponse;
   }
@@ -68,9 +61,6 @@ export class AppwriteFinanceService extends BaseFinanceService {
       TRANSACTIONS_COLLECTION_ID,
       transactionId,
       transactionData,
-      {
-        "X-Appwrite-Key": VITE_APPWRITE_API_KEY,
-      }
     );
     return editTransactionResponse;
   }
@@ -80,9 +70,6 @@ export class AppwriteFinanceService extends BaseFinanceService {
       DATABASE_ID,
       TRANSACTIONS_COLLECTION_ID,
       transactionId,
-      {
-        "X-Appwrite-Key": VITE_APPWRITE_API_KEY,
-      }
     );
   }
 
@@ -96,9 +83,6 @@ export class AppwriteFinanceService extends BaseFinanceService {
       ACCOUNTS_COLLECTION_ID,
       ID.unique(),
       budgetData,
-      {
-        "X-Appwrite-Key": VITE_APPWRITE_API_KEY,
-      }
     );
     return response;
   }
@@ -108,9 +92,6 @@ export class AppwriteFinanceService extends BaseFinanceService {
       BANK_STATEMENTS_BUCKET_ID,
       ID.unique(),
       file,
-      {
-        "X-Appwrite-Key": VITE_APPWRITE_API_KEY,
-      }
     );
     return response;
   }

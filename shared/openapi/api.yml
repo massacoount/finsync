@@ -1,0 +1,512 @@
+openapi: 3.0.0
+info:
+  title: FinSync API
+  version: 1.0.0
+  description: Financial management and synchronization API
+servers:
+  - url: https://finsync.masssolution.org/api
+    description: Production server
+  - url: http://localhost:3000
+    description: Local development server
+components:
+  securitySchemes:
+    OAuth2PasswordFlow:
+      type: oauth2
+      flows:
+        password:
+          tokenUrl: http://localhost:3000/oauth2/token
+          refreshUrl: http://localhost:3000/oauth2/refresh
+          scopes:
+            read: Grants read access
+            write: Grants write access
+  schemas:
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: The access token issued by the authorization server.
+        refresh_token:
+          type: string
+          description: The refresh token used to obtain new access tokens.
+        token_type:
+          type: string
+          description: The type of the token issued, typically 'bearer'.
+        expires_in:
+          type: integer
+          description: The lifetime in seconds of the access token.
+    AuthProvider:
+      type: string
+      enum: [LOCAL, MICROSOFT, GOOGLE, GITHUB]
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        picture:
+          type: string
+          nullable: true
+        provider:
+          $ref: '#/components/schemas/AuthProvider'
+      required:
+        - email
+        - name
+        - provider
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [checking, savings, credit, investment]
+        balance:
+          type: number
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - userId
+        - name
+        - type
+        - balance
+        - currency
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        date:
+          type: string
+          format: date-time
+        amount:
+          type: number
+        description:
+          type: string
+        accountFrom:
+          type: string
+        accountTo:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - userId
+        - date
+        - amount
+        - accountFrom
+        - accountTo
+paths:
+  /oauth2/token:
+    post:
+      summary: Obtain an access token using the password grant type.
+      operationId: getAccessToken
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                provider:
+                  $ref: '#/components/schemas/AuthProvider'
+                grant_type:
+                  type: string
+                  enum: [password, authorization_code]
+                  default: password
+                username:
+                  type: string
+                  description: The username of the resource owner.
+                password:
+                  type: string
+                  description: The password of the resource owner.
+                client_id:
+                  type: string
+                  description: The client identifier.
+                client_secret:
+                  type: string
+                  description: The client secret.
+                scope:
+                  type: string
+                  description: A space-separated list of scopes.
+      responses:
+        '200':
+          description: Successfully obtained access token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Invalid request, e.g., missing required parameters.
+        '401':
+          description: Unauthorized, e.g., invalid credentials.
+  /oauth2/refresh:
+    post:
+      summary: Refresh an access token using a refresh token.
+      operationId: refreshAccessToken
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                provider:
+                  $ref: '#/components/schemas/AuthProvider'
+                grant_type:
+                  type: string
+                  enum: [refresh_token]
+                  default: refresh_token
+                refresh_token:
+                  type: string
+                  description: The refresh token issued during the initial authorization.
+                client_id:
+                  type: string
+                  description: The client identifier.
+                client_secret:
+                  type: string
+                  description: The client secret.
+                scope:
+                  type: string
+                  description: A space-separated list of scopes.
+      responses:
+        '200':
+          description: Successfully refreshed access token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Invalid request, e.g., missing required parameters.
+        '401':
+          description: Unauthorized, e.g., invalid refresh token.
+  /transactions:
+    get:
+      operationId: getTransactions
+      responses:
+        '200':
+          description: A list of transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+        '401':
+          description: Unauthorized, e.g., missing or invalid access token.
+    post:
+      operationId: createTransaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Transaction'
+      responses:
+        '201':
+          description: Transaction created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '400':
+          description: Invalid request, e.g., missing required parameters.
+        '401':
+          description: Unauthorized, e.g., missing or invalid access token.
+  /transactions/{id}:
+    get:
+      operationId: getTransaction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A single transaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '401':
+          description: Unauthorized, e.g., missing or invalid access token.
+    put:
+      operationId: updateTransaction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Transaction'
+      responses:
+        '200':
+          description: Transaction updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '400':
+          description: Invalid request, e.g., missing required parameters.
+        '401':
+          description: Unauthorized, e.g., missing or invalid access token.
+    delete:
+      operationId: deleteTransaction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Transaction deleted
+        '401':
+          description: Unauthorized, e.g., missing or invalid access token.
+  /accounts:
+    get:
+      operationId: getAccounts
+      responses:
+        '200':
+          description: A list of accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Account'
+        '401':
+          description: Unauthorized, e.g., missing or invalid access token.
+    post:
+      operationId: createAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Account'
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '400':
+          description: Invalid request, e.g., missing required parameters.
+        '401':
+          description: Unauthorized, e.g., missing or invalid access token.
+  /accounts/{id}:
+    get:
+      operationId: getAccount
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A single account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '401':
+          description: Unauthorized, e.g., missing or invalid access token.
+    put:
+      operationId: updateAccount
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Account'
+      responses:
+        '200':
+          description: Account updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '400':
+          description: Invalid request, e.g., missing required parameters.
+        '401':
+          description: Unauthorized, e.g., missing or invalid access token.
+    delete:
+      operationId: deleteAccount
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Account deleted
+        '401':
+          description: Unauthorized, e.g., missing or invalid access token.
+  /accounts/{id}/transactions:
+    get:
+      operationId: getAccountTransactions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of transactions for the account
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+        '401':
+          description: Unauthorized, e.g., missing or invalid access token.
+  /accounts/{id}/transactions/{transactionId}:
+    get:
+      operationId: getAccountTransaction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A single transaction for the account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '401':
+          description: Unauthorized, e.g., missing or invalid access token.
+  /users: 
+    get:
+      operationId: getUsers
+      responses:
+        '200':
+          description: A list of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Unauthorized, e.g., missing or invalid access token.
+    post:
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          description: Invalid request, e.g., missing required parameters.
+        '401':
+          description: Unauthorized, e.g., missing or invalid access token.
+  /users/{id}:
+    get:
+      operationId: getUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A single user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Unauthorized, e.g., missing or invalid access token.
+    put:
+      operationId: updateUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          description: Invalid request, e.g., missing required parameters.
+        '401':
+          description: Unauthorized, e.g., missing or invalid access token.
+    delete:
+      operationId: deleteUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: User deleted
+        '401':
+          description: Unauthorized, e.g., missing or invalid access token.

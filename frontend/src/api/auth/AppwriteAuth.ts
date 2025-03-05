@@ -19,16 +19,16 @@ export class AppwriteAuth extends BaseAuth {
       const response = await account.createEmailPasswordSession(email, password);
       return response;
     } catch (error) {
-      throw new Error(`Login failed: ${error.message}`);
+      throw new Error(`Login failed: ${(error as any).message}`);
     }
   }
 
   async register(email: string, password: string): Promise<any> {
     try {
-      const response = await account.create(email, password);
+      const response = await account.create(email, email, password);
       return response;
     } catch (error) {
-      throw new Error(`Registration failed: ${error.message}`);
+      throw new Error(`Registration failed: ${(error as any).message}`);
     }
   }
 
@@ -37,7 +37,7 @@ export class AppwriteAuth extends BaseAuth {
       const user = await account.get();
       return user;
     } catch (error) {
-      throw new Error(`Failed to get user: ${error.message}`);
+      throw new Error(`Failed to get user: ${(error as any).message}`);
     }
   }
 
@@ -45,7 +45,7 @@ export class AppwriteAuth extends BaseAuth {
     try {
       await account.deleteSession('current');
     } catch (error) {
-      throw new Error(`Logout failed: ${error.message}`);
+      throw new Error(`Logout failed: ${(error as any).message}`);
     }
   }
 }

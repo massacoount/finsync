@@ -24,4 +24,17 @@ export class FirebaseAuth extends BaseAuth {
     const userCredential = await createUserWithEmailAndPassword(firebaseAuth, email, password);
     return userCredential.user;
   }
+
+  async getUser(): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const unsubscribe = firebaseAuth.onAuthStateChanged((user) => {
+        unsubscribe();
+        resolve(user);
+      }, reject);
+    });
+  }
+
+  async logout(): Promise<void> {
+    return firebaseAuth.signOut();
+  }
 }

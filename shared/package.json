@@ -1,0 +1,16 @@
+{
+  "name": "finsync-shared",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "generate:api": "openapi-generator-cli generate -i openapi/api.yaml -g typescript-axios -o src/generated",
+    "postinstall": "npm run generate:api"
+  },
+  "devDependencies": {
+    "@openapitools/openapi-generator-cli": "^2.7.0"
+  }
+}
