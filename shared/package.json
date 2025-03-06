@@ -1,16 +1,18 @@
 {
-  "name": "finsync-shared",
+  "name": "@finsync/shared",
   "version": "1.0.0",
-  "description": "",
+  "description": "Shared OpenAPI specification and generated code",
   "license": "ISC",
   "author": "",
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "generate:api": "openapi-generator-cli generate -i openapi/api.yaml -g typescript-axios -o src/generated",
+    "generate:client": "openapi-generator-cli generate -i openapi/api.yaml -g typescript-axios -o generated/client",
+    "generate:server": "openapi-generator-cli generate -i openapi/api.yaml -g nodejs-express-server -o generated/server",
     "postinstall": "npm run generate:api"
   },
+  "keywords": [],
   "devDependencies": {
-    "@openapitools/openapi-generator-cli": "^2.7.0"
+    "openapi-generator-cli": "^2.4.26"
   }
 }

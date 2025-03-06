@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "@finsync/backend",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -7,7 +7,9 @@
     "start": "node dist/app.js",
     "dev": "nodemon src/index.ts",
     "build": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "postinstall": "npm run copy:server",
+    "copy:server": "cp -r ../shared/generated/server/* src/"
   },
   "keywords": [],
   "author": "",
@@ -23,7 +25,8 @@
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.12.0",
-    "winston": "^3.17.0"
+    "winston": "^3.17.0",
+    "@finsync/shared": "file:../shared"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
