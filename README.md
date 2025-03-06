@@ -1,20 +1,17 @@
 # Fin-Sync
 
 ## Overview
-Fin-Sync is a project that provides a shared OpenAPI specification and generated code for both client and server. This repository contains the necessary scripts and configurations to generate TypeScript Axios client and Node.js Express server code from the OpenAPI specification.
+Fin-Sync is a project that provides shared models for both frontend and backend. This repository contains the necessary scripts and configurations to generate TypeScript models from an OpenAPI specification that can be reused across the frontend and backend.
 
 ## Structure
 - `openapi/`: Contains the OpenAPI specification file (`api.yaml`).
-- `generated/`: Contains the generated client and server code.
-  - `client/`: Generated TypeScript Axios client code.
-  - `server/`: Generated Node.js Express server code.
+- `generated/`: Contains the generated models.
+  - `models/`: Generated TypeScript models.
 
 ## Scripts
-The following npm scripts are available:
+The following npm script is available:
 
-- `generate:client`: Generates the TypeScript Axios client code from the OpenAPI specification.
-- `generate:server`: Generates the Node.js Express server code from the OpenAPI specification.
-- `postinstall`: Runs the `generate:api` script after installing dependencies.
+- `generate:models`: Generates the TypeScript models from the OpenAPI specification.
 
 ## Usage
 1. Clone the repository:
@@ -28,10 +25,9 @@ The following npm scripts are available:
    npm install
    ```
 
-3. Generate the client and server code:
+3. Generate the models:
    ```sh
-   npm run generate:client
-   npm run generate:server
+   npm run generate:models
    ```
 
 ## License
