@@ -1,26 +1,42 @@
-import 'express-async-errors';
-import express from 'express';
-import helmet from 'helmet';
-import bodyParser from 'body-parser';
-import config from './config';
-import logger from './config/logger';
-import authRoutes from './routes/auth';
-import { notFoundHandler, errorHandler } from './middleware/errorHandler';
+import express from "express";
+import helmet from "helmet";
+import bodyParser from "body-parser";
+import ErrorHandler from "./middleware/ErrorHandler";
+import authRoutes from "./routes/AuthRoutes";
+import accountRoutes from "./routes/AccountRoutes";
+import transactionRoutes from "./routes/TransactionRoutes";
+import userRoutes from "./routes/UserRoutes";
+import AuthMiddleware from "./middleware/AuthMiddleware";
+import { addTraceId } from "./config/logger";
 
-const app = express();
+class App {
+  public app: express.Application;
 
-app.use(helmet());
-app.use(bodyParser.json());
+  constructor() {
+    this.app = express();
+    this.initializeMiddlewares();
+    this.initializeRoutes();
+    this.initializeErrorHandling();
+  }
 
-// Standardized endpoints with versioning (e.g., /api/v1)
-app.use('/api/v1/auth', authRoutes);
+  private initializeMiddlewares() {
+    this.app.use(helmet());
+    this.app.use(bodyParser.json());
+    this.app.use(addTraceId);
+  }
 
-// Additional endpoints can be added here using the same standard format
+  private initializeRoutes() {
+    this.app.use("/oauth2", authRoutes);
+    this.app.use("/accounts", AuthMiddleware.authenticate, accountRoutes);
+    this.app.use("/transactions", AuthMiddleware.authenticate, transactionRoutes);
+    this.app.use("/users", AuthMiddleware.authenticate, userRoutes);
+  }
 
-// Catch-all for 404 Not Found
-app.use(notFoundHandler);
+  private initializeErrorHandling() {
+    this.app.use(ErrorHandler.notFoundHandler);
+    this.app.use(ErrorHandler.clientErrorHandler);
+    this.app.use(ErrorHandler.serverErrorHandler);
+  }
+}
 
-// Global error handler
-app.use(errorHandler);
-
-export default app;
+export default new App().app;

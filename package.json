@@ -7,10 +7,10 @@
     "backend"
   ],
   "scripts": {
-    "build": "yarn run build --workspace=shared && npm run build --workspace=frontend && npm run build --workspace=backend",
+    "build": "concurrently 'yarn run build --workspace=shared' 'yarn run build --workspace=frontend' 'yarn run build --workspace=backend'",
     "dev:frontend": "yarn run dev --workspace=frontend",
     "dev:backend": "yarn run dev --workspace=backend",
-    "dev": "concurrently \"yarn run dev:frontend\" \"yarn run dev:backend\""
+    "dev": "concurrently 'yarn run dev:frontend' 'yarn run dev:backend'"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

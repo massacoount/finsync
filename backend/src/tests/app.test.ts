@@ -1,5 +1,5 @@
 import request from 'supertest';
-import app from '../app';
+import app from '../App';
 
 describe('GET /nonexistent', () => {
   it('should return 404 with JSON response', async () => {

@@ -1,24 +1,33 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
+import logger from "../config/logger";
+import { CustomError } from "../models/CustomError";
 
-export const notFoundHandler = (req: Request, res: Response, next: NextFunction) => {
-  res.status(404);
-  if (req.accepts('html')) {
-    res.type('html').send('<h1>404 - Not Found</h1><p>The requested resource could not be found.</p>');
-  } else if (req.accepts('json')) {
-    res.json({ error: 'Not Found' });
-  } else {
-    res.type('txt').send('Not Found');
+class ErrorHandler {
+  private static sendErrorResponse(res: Response, statusCode: number, message: string, details?: string) {
+    res.status(statusCode);
+    if (res.req.accepts('html') || res.req.get('Content-Type') === 'text/html') {
+      res.type('html').send(`<h1>${statusCode} - ${message}</h1><p>${details || 'An error occurred.'}</p>`);
+    } else if (res.req.accepts('json') || res.req.get('Content-Type') === 'application/json') {
+      res.json({ error: message, details });
+    } else {
+      res.type('txt').send(`${statusCode} - ${message}`);
+    }
   }
-};
 
-export const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack);
-  res.status(500);
-  if (req.accepts('html')) {
-    res.type('html').send('<h1>500 - Internal Server Error</h1><p>Something went wrong on our end.</p>');
-  } else if (req.accepts('json')) {
-    res.json({ error: 'Internal Server Error' });
-  } else {
-    res.type('txt').send('Internal Server Error');
+  public static notFoundHandler(req: Request, res: Response) {
+    logger.error(`404 - Not Found - ${req.originalUrl} - ${req.method} - ${req.ip}`, req.headers['x-trace-id']);
+    this.sendErrorResponse(res, 404, 'Not Found', 'The requested resource could not be found.');
   }
-};
+
+  public static clientErrorHandler(err: CustomError, req: Request, res: Response) {
+    logger.error(`${err.statusCode} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`, req.headers['x-trace-id']);
+    this.sendErrorResponse(res, err.statusCode, err.message, err.details);
+  }
+
+  public static serverErrorHandler(err: Error, req: Request, res: Response) {
+    logger.error(err.stack || err.message, req.headers['x-trace-id']);
+    this.sendErrorResponse(res, 500, 'Internal Server Error', 'Something went wrong on our end.');
+  }
+}
+
+export default ErrorHandler;

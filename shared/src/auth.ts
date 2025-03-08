@@ -1,6 +1,4 @@
-export interface TokenResponse {
-    token: string;
-}export enum AuthProvider {
+export enum AuthProvider {
   LOCAL = 'LOCAL',
   MICROSOFT = 'MICROSOFT',
   GOOGLE = 'GOOGLE',

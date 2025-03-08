@@ -7,8 +7,15 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@entity/*": ["entity/*"]
+    },
+    "typeRoots": ["node_modules/@types", "src/@types"],
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "src/controllers/.ts", "src/entity/**/*.ts"],
   "exclude": ["node_modules", "**/*.spec.ts"]
 }
