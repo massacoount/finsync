@@ -1,13 +1,16 @@
 import { ref } from 'vue';
 
 export function useNotifications() {
-  const notifications = ref([]);
+  const notifications = ref<{
+    message: string; 
+    type: string
+  }[]>([]);
 
-  const addNotification = (message, type = 'info') => {
+  const addNotification = (message: string, type = 'info') => {
     notifications.value.push({ message, type });
   };
 
-  const removeNotification = (index) => {
+  const removeNotification = (index: number) => {
     notifications.value.splice(index, 1);
   };
 

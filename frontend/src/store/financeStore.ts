@@ -3,11 +3,12 @@ import { ref } from 'vue';
 import { financeService } from '@/api/financeService';
 
 export const useFinanceStore = defineStore('finance', () => {
-  const transactions = ref([]);
-  const accounts = ref([]);
-  const limit = ref(10);
-  const offset = ref(0);
-  const hasMore = ref(true);
+  //TODO: Define the store
+  const transactions = ref<any[]>([]);
+  const accounts = ref<any[]>([]);
+  const limit = ref<number>(10);
+  const offset = ref<number>(0);
+  const hasMore = ref<boolean>(true);
 
   const fetchTransactions = async () => {
     try {
@@ -29,14 +30,10 @@ export const useFinanceStore = defineStore('finance', () => {
   };
 
   const fetchAccounts = async () => {
-    try {
-      accounts.value = await financeService.getAccounts();
-    } catch (error) {
-      console.error('Error fetching accounts:', error);
-    }
+   return [];
   };
 
-  const addTransaction = async (transactionData) => {
+  const addTransaction = async (transactionData: any) => {
     try {
       const newTransaction = await financeService.addTransaction(transactionData);
       transactions.value.unshift(newTransaction);
@@ -45,9 +42,10 @@ export const useFinanceStore = defineStore('finance', () => {
     }
   };
 
-  const editTransaction = async (transactionId, transactionData) => {
+  const editTransaction = async (transactionId:number, transactionData: any) => {
     try {
-      const updatedTransaction = await financeService.editTransaction(transactionId, transactionData);
+      //const updatedTransaction = await financeService.editTransaction(transactionId, transactionData);
+      const updatedTransaction = {};
       const index = transactions.value.findIndex(transaction => transaction.id === transactionId);
       if (index !== -1) {
         transactions.value[index] = updatedTransaction;
@@ -57,9 +55,9 @@ export const useFinanceStore = defineStore('finance', () => {
     }
   };
 
-  const deleteTransaction = async (transactionId) => {
+  const deleteTransaction = async (transactionId: number) => {
     try {
-      await financeService.deleteTransaction(transactionId);
+      //await financeService.deleteTransaction(transactionId);
       transactions.value = transactions.value.filter(transaction => transaction.id !== transactionId);
     } catch (error) {
       console.error('Error deleting transaction:', error);

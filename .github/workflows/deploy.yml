@@ -1,0 +1,25 @@
+name: Deploy
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to W1
+        uses: appleboy/ssh-action@v0.1.4
+        with:
+          host: ${{ secrets.W1_HOST }}
+          port: ${{ secrets.W1_PORT }}
+          username: ${{ secrets.W1_USERNAME }}
+          password: ${{ secrets.W1_PASSWORD }}
+          script: |
+            cd ${{ secrets.W1_PATH }}
+            git pull
+            cd ${{ secrets.W1_PATH }}/backend
+            npm install
+            cd ${{ secrets.W1_PATH }}/frontend
+            npm install
+            npm run build    
+            echo "Deployment successful!"
