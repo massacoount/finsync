@@ -1,17 +1,15 @@
 import { BaseAuth } from './BaseAuth';
-import { FirebaseAuth } from './FirebaseAuth';
-import { AppwriteAuth } from './AppwriteAuth';
-import { NodeAuth } from './NodeAuth';
+import { DefaultAuth } from './DefaultAuth';
 
 export class AuthFactory {
   static createAuthService(provider: string): BaseAuth {
     switch (provider) {
       case 'firebase':
-        return new FirebaseAuth();
+        throw new Error('Not implemented');
       case 'appwrite':
-        return new AppwriteAuth();
+        throw new Error('Not implemented');
       default:
-        return new NodeAuth();
+        return new DefaultAuth();
     }
   }
 }

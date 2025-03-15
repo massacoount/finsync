@@ -3,9 +3,9 @@ import axios from 'axios';
 
 const BASE_URL = import.meta.env.BASE_URL || '';
 
-export class NodeAuth extends BaseAuth {
+export class DefaultAuth extends BaseAuth {
     login(email: string, password: string): Promise<any> {
-        return axios.post(`${BASE_URL}/api/login`, { email, password })
+        return axios.post(`${BASE_URL}/auth/token`, { email, password })
             .then(response => response.data)
             .catch(error => {
                 throw new Error(error.response?.data?.message || 'Login failed');

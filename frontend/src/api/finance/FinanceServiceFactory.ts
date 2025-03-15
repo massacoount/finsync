@@ -1,13 +1,15 @@
 import { BaseFinanceService } from './BaseFinanceService';
-import { AppwriteFinanceService } from './AppwriteFinanceService';
+import DefaultFinanceService from './DefaultFinanceService';
 
 export class FinanceServiceFactory {
   static createFinanceService(provider: string): BaseFinanceService {
     switch (provider) {
       case 'appwrite':
-        return new AppwriteFinanceService();
+        throw new Error('Not implemented');
+      case 'firebase':
+        throw new Error('Not implemented');
       default:
-        throw new Error('Invalid provider');
+        return new DefaultFinanceService();
     }
   }
 }
