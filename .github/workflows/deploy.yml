@@ -15,8 +15,7 @@ jobs:
           username: ${{ secrets.W1_USERNAME }}
           password: ${{ secrets.W1_PASSWORD }}
           script: |
-            nvm use v 22.13.1
-            cd ${{ secrets.W1_PATH }}
+            source ${{secrets.SOURCE_PATH}} &&  cd ${{ secrets.W1_PATH }}
             git pull
             cd backend
             npm install
