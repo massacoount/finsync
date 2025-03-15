@@ -18,9 +18,9 @@ jobs:
             nvm use v 22.13.1
             cd ${{ secrets.W1_PATH }}
             git pull
-            cd ${{ secrets.W1_PATH }}/backend
+            cd backend
             npm install
-            cd ${{ secrets.W1_PATH }}/frontend
+            cd ../frontend
             npm install
             npm run build    
             echo "Deployment successful!"
