@@ -10,6 +10,7 @@ const crypto = require('crypto');
 const OAuth2Server = require('oauth2-server');
 const YAML = require('yamljs');
 const path = require('path');
+const { body, validationResult } = require('express-validator');
 
 class DatabaseService {
   constructor() {
@@ -256,11 +257,46 @@ class OAuthService {
   }
 }
 
+class Util {
+  constructor(logger, oauthService){
+    this.logger = logger
+    this.oauthService = oauthService;
+  }
+  
+  async validateRequest(req, response, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      this.logger.log("Request is rejected with erors", errors)
+      return res.status(400).json({ errors: errors.array() });
+    }
+    return next()
+  }
+
+  async authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (!token) return res.status(401).json({ error: 'invalid_token' });
+
+    try {
+      const request = new OAuth2Server.Request(req);
+      const response = new OAuth2Server.Response(res);
+      const token = await this.oauthService.oauth.authenticate(request, response);
+      req.user = token.user;
+      next();
+    } catch (err) {
+      res.status(401).json(this.oauthService.formatOAuthError(err));
+    }
+  }
+
+}
+
+
 class AuthController {
-  constructor(dbService, logger, oauthService) {
+  constructor(dbService, logger, util) {
     this.db = dbService;
     this.logger = logger;
-    this.oauthService = oauthService;
+    this.util = util;
     this.router = express.Router();
     this.initializeRoutes();
   }
@@ -268,7 +304,7 @@ class AuthController {
   initializeRoutes() {
     this.router.get('/authorize', this.authorize.bind(this));
     this.router.post('/token', this.token.bind(this));
-    this.router.get('/userinfo', this.authenticateToken.bind(this), this.userInfo.bind(this));
+    this.router.get('/userinfo', this.util.authenticateToken.bind(this), this.userInfo.bind(this));
   }
 
   async authorize(req, res) {
@@ -291,39 +327,23 @@ class AuthController {
       email_verified: true
     });
   }
-
-  async authenticateToken(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    
-    if (!token) return res.status(401).json({ error: 'invalid_token' });
-
-    try {
-      const request = new OAuth2Server.Request(req);
-      const response = new OAuth2Server.Response(res);
-      const token = await this.oauthService.oauth.authenticate(request, response);
-      req.user = token.user;
-      next();
-    } catch (err) {
-      res.status(401).json(this.oauthService.formatOAuthError(err));
-    }
-  }
 }
 
 class AccountController {
-    constructor(dbService, logger) {
+    constructor(dbService, logger, util) {
       this.db = dbService;
       this.logger = logger;
+      this.util = util;
       this.router = express.Router();
       this.initializeRoutes();
     }
   
     initializeRoutes() {
-      this.router.get('/', this.getAccounts.bind(this));
-      this.router.post('/', this.createAccount.bind(this));
-      this.router.get('/:id', this.getAccount.bind(this));
-      this.router.put('/:id', this.updateAccount.bind(this));
-      this.router.delete('/:id', this.deleteAccount.bind(this));
+      this.router.get('/', this.util.validateRequest(this), this.getAccounts.bind(this));
+      this.router.post('/', this.util.validateRequest(this), this.createAccount.bind(this));
+      this.router.get('/:id', this.util.validateRequest(this), this.getAccount.bind(this));
+      this.router.put('/:id', this.util.validateRequest(this), this.updateAccount.bind(this));
+      this.router.delete('/:id', this.util.validateRequest(this), this.deleteAccount.bind(this));
     }
   
     async getAccounts(req, res) {
@@ -399,19 +419,20 @@ class AccountController {
   }
   
   class TransactionController {
-    constructor(dbService, logger) {
+    constructor(dbService, logger, util) {
       this.db = dbService;
       this.logger = logger;
+      this.util = util;
       this.router = express.Router();
       this.initializeRoutes();
     }
   
     initializeRoutes() {
-      this.router.get('/', this.getTransactions.bind(this));
-      this.router.post('/', this.createTransaction.bind(this));
-      this.router.get('/:id', this.getTransaction.bind(this));
-      this.router.put('/:id', this.updateTransaction.bind(this));
-      this.router.delete('/:id', this.deleteTransaction.bind(this));
+      this.router.get('/', this.util.validateRequest(this), this.getTransactions.bind(this));
+      this.router.post('/', this.util.validateRequest(this), this.createTransaction.bind(this));
+      this.router.get('/:id', this.util.validateRequest(this), this.getTransaction.bind(this));
+      this.router.put('/:id', this.util.validateRequest(this), this.updateTransaction.bind(this));
+      this.router.delete('/:id', this.util.validateRequest(this), this.deleteTransaction.bind(this));
     }
   
     async getTransactions(req, res) {
@@ -510,18 +531,19 @@ class AccountController {
   }
   
   class TagController {
-    constructor(dbService, logger) {
+    constructor(dbService, logger, util) {
       this.db = dbService;
       this.logger = logger;
+      this.util = util;
       this.router = express.Router();
       this.initializeRoutes();
     }
   
     initializeRoutes() {
-      this.router.get('/', this.getTags.bind(this));
-      this.router.post('/', this.createTag.bind(this));
-      this.router.put('/:id', this.updateTag.bind(this));
-      this.router.delete('/:id', this.deleteTag.bind(this));
+      this.router.get('/', this.util.validateRequest(this), this.getTags.bind(this));
+      this.router.post('/', this.util.validateRequest(this), this.createTag.bind(this));
+      this.router.put('/:id', this.util.validateRequest(this), this.updateTag.bind(this));
+      this.router.delete('/:id', this.util.validateRequest(this), this.deleteTag.bind(this));
     }
   
     async getTags(req, res) {
@@ -580,19 +602,20 @@ class AccountController {
   }
   
   class BudgetController {
-    constructor(dbService, logger) {
+    constructor(dbService, logger, util) {
       this.db = dbService;
       this.logger = logger;
+      this.util = util;
       this.router = express.Router();
       this.initializeRoutes();
     }
   
     initializeRoutes() {
-      this.router.get('/', this.getBudgets.bind(this));
-      this.router.post('/', this.createBudget.bind(this));
-      this.router.get('/:id', this.getBudget.bind(this));
-      this.router.put('/:id', this.updateBudget.bind(this));
-      this.router.delete('/:id', this.deleteBudget.bind(this));
+      this.router.get('/', this.util.validateRequest(this), this.getBudgets.bind(this));
+      this.router.post('/', this.util.validateRequest(this), this.createBudget.bind(this));
+      this.router.get('/:id', this.util.validateRequest(this), this.getBudget.bind(this));
+      this.router.put('/:id', this.util.validateRequest(this), this.updateBudget.bind(this));
+      this.router.delete('/:id', this.util.validateRequest(this), this.deleteBudget.bind(this));
     }
   
     async getBudgets(req, res) {
@@ -674,6 +697,7 @@ class FinsyncApp {
     this.dbService = new DatabaseService();
     this.logger = new LoggerService();
     this.oauthService = new OAuthService(this.dbService, this.logger);
+    this.util =  new Util(this.logger, this.oauthService)
     this.setupMiddleware();
     this.setupSwagger();
     this.setupControllers();
@@ -691,12 +715,11 @@ class FinsyncApp {
   }
 
   setupControllers() {
-    const authController = new AuthController(this.dbService, this.logger, this.oauthService);
-    const accountController = new AccountController(this.dbService, this.logger);
-    const transactionController = new TransactionController(this.dbService, this.logger);
-    const tagController = new TagController(this.dbService, this.logger);
-    const budgetController = new BudgetController(this.dbService, this.logger);
-
+    const authController = new AuthController(this.dbService, this.logger, this.util);
+    const accountController = new AccountController(this.dbService, this.logger , this.util);
+    const transactionController = new TransactionController(this.dbService, this.logger, this.util);
+    const tagController = new TagController(this.dbService, this.logger, this.util);
+    const budgetController = new BudgetController(this.dbService, this.logger, this.util);
     this.app.use('/auth', authController.router);
     this.app.use('/accounts', this.oauthService.oauth.authenticate(), accountController.router);
     this.app.use('/transactions', this.oauthService.oauth.authenticate(), transactionController.router);
