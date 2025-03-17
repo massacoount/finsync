@@ -6,6 +6,7 @@ info:
 
 servers:
   - url: /
+    description: Default server
 
 components:
   securitySchemes:
@@ -107,6 +108,93 @@ security:
   - bearerAuth: []
 
 paths:
+  /auth/authorize:
+    get:
+      summary: 'Authorize'
+      description: 'Authorize a user'
+      responses:
+        '302':
+          description: 'Redirect to the client with authorization code'
+        '400':
+          description: 'Invalid request'
+        '500':
+          description: 'Internal server error'
+  /auth/token:
+    post:
+      summary: 'Token'
+      description: 'Get an access token'
+      requestBody:
+        content:
+          'application/x-www-form-urlencoded':
+            schema:
+              type: 'object'
+              properties:
+                grant_type:
+                  type: 'string'
+                username:
+                  type: 'string'
+                password:
+                  type: 'string'
+                client_id:
+                  type: 'string'
+                client_secret:
+                  type: 'string'
+                scope:
+                  type: 'string'
+              required:
+                - grant_type
+                - username
+                - password
+                - client_id
+                - client_secret
+      responses:
+        '200':
+          description: 'Access token'
+          content:
+            'application/json':
+              schema:
+                type: 'object'
+                properties:
+                  access_token:
+                    type: 'string'
+                  token_type:
+                    type: 'string'
+                  expires_in:
+                    type: 'integer'
+                  refresh_token:
+                    type: 'string'
+                  scope:
+                    type: 'string'
+        '400':
+          description: 'Invalid request'
+        '401':
+          description: 'Invalid client or user credentials'
+        '500':
+          description: 'Internal server error'
+  /auth/userinfo:
+    get:
+      summary: 'User Info'
+      description: 'Get user information'
+      responses:
+        '200':
+          description: 'User information'
+          content:
+            'application/json':
+              schema:
+                type: 'object'
+                properties:
+                  sub:
+                    type: 'string'
+                  name:
+                    type: 'string'
+                  email:
+                    type: 'string'
+                  email_verified:
+                    type: 'boolean'
+        '401':
+          description: 'Unauthorized'
+        '500':
+          description: 'Internal server error'
   /accounts:
     get:
       summary: List all accounts
