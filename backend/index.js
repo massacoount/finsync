@@ -55,7 +55,7 @@ class LoggerService {
     });
   }
 
-  log(level, message, meta) {
+  log(level, message, ...meta) {
     this.logger.log(level, message, meta);
   }
 }
@@ -840,17 +840,21 @@ class BudgetController {
 
 class FinsyncApp {
   constructor() {
-    this.app = express();
-    this.dbService = new DatabaseService();
-    this.logger = new LoggerService();
-    this.oauthService = new OAuthService(this.dbService, this.logger);
-    this.util = new Util(this.logger, this.oauthService);
-    this.setupMiddleware();
-    this.setupSwagger();
-    this.setupControllers();
-    this.setupErrorHandling();
-    this.setupStaticFiles();
-    this.logger.log("info", "Initializing Finsync application");
+    try {
+      this.app = express();
+      this.dbService = new DatabaseService();
+      this.logger = new LoggerService();
+      this.oauthService = new OAuthService(this.dbService, this.logger);
+      this.util = new Util(this.logger, this.oauthService);
+      this.setupMiddleware();
+      this.setupSwagger();
+      this.setupControllers();
+      this.setupErrorHandling();
+      this.setupStaticFiles();
+      this.logger.log("info", "Initializing Finsync application");
+    } catch (err) {
+      this.logger.log("error", "Error initializing Finsync application", err);
+    }
   }
 
   setupMiddleware() {
@@ -964,10 +968,14 @@ class FinsyncApp {
   }
 
   start(port = 3000) {
-    this.logger.log("info", "Starting server", { port });
-    return this.app.listen(port, () => {
-      this.logger.log("info", `Server running on port ${port}`);
-    });
+    try {
+      this.logger.log("info", "Starting server", { port });
+      return this.app.listen(port, () => {
+        this.logger.log("info", `Server running on port ${port}`);
+      });
+    } catch (err) {
+      this.logger.log("error", "Error starting server", err);
+    }
   }
 }
 
