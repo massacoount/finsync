@@ -49,7 +49,7 @@ class LoggerService {
       format: winston.format.json(),
       transports: [
         new winston.transports.Console(),
-        new winston.transports.File({ filename: "app.log" }),
+        new winston.transports.File({ filename: process.env.LOG_PATH || "app.log" }),
       ],
     });
   }
@@ -913,7 +913,7 @@ class FinsyncApp {
       this.logger.error("Unhandled error:", err);
       handleError(500, req, res);
     });
-    app.use((req, res) => {
+    this.app.use((req, res) => {
       this.logger.error("Not found error:", req.originalUrl);
       handleError(404, req, res);
     });
