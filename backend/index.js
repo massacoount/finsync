@@ -923,10 +923,10 @@ class FinsyncApp {
 
   setupErrorHandling() {
     const handleError = (code, error, req, res) => {
-      const accept = req.accepts(["html", "json", "text"]);
-      if (accept === "json") {
+      const accept = req.headers["accept"] || "application/json";
+      if (accept.includes("application/json")) {
         res.status(code).json(error);
-      } else if (accept === "text") {
+      } else if (accept.includes("text/plain")) {
         res.status(code).send(error.message);
       } else {
         res.status(code).sendFile(`${__dirname}/public/${code}.html`);
