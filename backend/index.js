@@ -49,18 +49,15 @@ class LoggerService {
       level: "info",
       format: winston.format.json(),
       transports: [
-        new winston.transports.Console(),
-        new winston.transports.File({ filename: process.env.LOG_PATH || "app.log" }),
+        new winston.transports.File({
+          filename: process.env.LOG_PATH || "app.log",
+        }),
       ],
     });
   }
 
-  log(message, meta) {
-    this.logger.log("info", message, meta);
-  }
-
-  error(message, meta) {
-    this.logger.log("error", message, meta);
+  log(level, message, meta) {
+    this.logger.log(level, message, meta);
   }
 }
 
@@ -251,7 +248,7 @@ class OAuthService {
       const token = await this.oauth.token(request, response);
       res.json(token);
     } catch (err) {
-      this.logger.error("Token error:", err);
+      this.logger.log("error", "Token error:", err);
       res.status(err.code || 500).json(this.formatOAuthError(err));
     }
   }
@@ -266,7 +263,7 @@ class OAuthService {
         `${authParams.redirectUri}?code=${authParams.authorizationCode}`
       );
     } catch (err) {
-      this.logger.error("Authorization error:", err);
+      this.logger.log("error", "Authorization error:", err);
       res.status(err.code || 500).json(this.formatOAuthError(err));
     }
   }
@@ -293,6 +290,7 @@ class OAuthService {
         req.user = tokenData.user;
         next();
       } catch (err) {
+        this.logger.log("error", "Authentication error:", err);
         res.status(401).json(this.formatOAuthError(err));
       }
     };
@@ -404,7 +402,7 @@ class AccountController {
       );
       res.json(accounts);
     } catch (error) {
-      this.logger.error("Error fetching accounts:", error);
+      this.logger.log("error", "Error fetching accounts:", error);
       res.status(500).json({ error: "Failed to fetch accounts" });
     }
   }
@@ -427,7 +425,7 @@ class AccountController {
       );
       res.status(201).json({ id: accountId, ...req.body });
     } catch (error) {
-      this.logger.error("Error creating account:", error);
+      this.logger.log("error", "Error creating account:", error);
       res.status(400).json({ error: "Failed to create account" });
     }
   }
@@ -444,7 +442,7 @@ class AccountController {
         res.status(404).json({ error: "Account not found" });
       }
     } catch (error) {
-      this.logger.error("Error fetching account:", error);
+      this.logger.log("error", "Error fetching account:", error);
       res.status(500).json({ error: "Failed to fetch account" });
     }
   }
@@ -458,7 +456,7 @@ class AccountController {
       );
       res.json({ id: req.params.id, ...req.body });
     } catch (error) {
-      this.logger.error("Error updating account:", error);
+      this.logger.log("error", "Error updating account:", error);
       res.status(400).json({ error: "Failed to update account" });
     }
   }
@@ -471,7 +469,7 @@ class AccountController {
       );
       res.status(204).send();
     } catch (error) {
-      this.logger.error("Error deleting account:", error);
+      this.logger.log("error", "Error deleting account:", error);
       res.status(400).json({ error: "Failed to delete account" });
     }
   }
@@ -522,7 +520,7 @@ class TransactionController {
       );
       res.json(transactions);
     } catch (error) {
-      this.logger.error("Error fetching transactions:", error);
+      this.logger.log("error", "Error fetching transactions:", error);
       res.status(500).json({ error: "Failed to fetch transactions" });
     }
   }
@@ -537,8 +535,17 @@ class TransactionController {
       tag_id,
     } = req.body;
     const connection = await this.db.getConnection();
+
+    this.logger.log("info", "Starting new transaction", {
+      userId: req.user.id,
+      fromAccount: from_account_id,
+      toAccount: to_account_id,
+      amount,
+    });
+
     try {
       await connection.beginTransaction();
+      this.logger.log("debug", "Transaction started");
 
       const transactionId = uuidv4();
       await connection.query(
@@ -567,13 +574,26 @@ class TransactionController {
       );
 
       await connection.commit();
+      this.logger.log("info", "Transaction completed successfully", {
+        transactionId,
+        amount,
+        fromAccount: from_account_id,
+        toAccount: to_account_id,
+      });
       res.status(201).json({ id: transactionId, ...req.body });
     } catch (error) {
       await connection.rollback();
-      this.logger.error("Error creating transaction:", error);
+      this.logger.log("error", "Transaction failed", {
+        error,
+        userId: req.user.id,
+        fromAccount: from_account_id,
+        toAccount: to_account_id,
+        amount,
+      });
       res.status(400).json({ error: "Failed to create transaction" });
     } finally {
       connection.release();
+      this.logger.log("debug", "Database connection released");
     }
   }
 
@@ -589,7 +609,7 @@ class TransactionController {
         res.status(404).json({ error: "Transaction not found" });
       }
     } catch (error) {
-      this.logger.error("Error fetching transaction:", error);
+      this.logger.log("error", "Error fetching transaction:", error);
       res.status(500).json({ error: "Failed to fetch transaction" });
     }
   }
@@ -605,7 +625,7 @@ class TransactionController {
       );
       res.json({ id: req.params.id, ...req.body });
     } catch (error) {
-      this.logger.error("Error updating transaction:", error);
+      this.logger.log("error", "Error updating transaction:", error);
       res.status(400).json({ error: "Failed to update transaction" });
     }
   }
@@ -620,7 +640,7 @@ class TransactionController {
       );
       res.status(204).send();
     } catch (error) {
-      this.logger.error("Error deleting transaction:", error);
+      this.logger.log("error", "Error deleting transaction:", error);
       res.status(400).json({ error: "Failed to delete transaction" });
     }
   }
@@ -661,7 +681,7 @@ class TagController {
       ]);
       res.json(tags);
     } catch (error) {
-      this.logger.error("Error fetching tags:", error);
+      this.logger.log("error", "Error fetching tags:", error);
       res.status(500).json({ error: "Failed to fetch tags" });
     }
   }
@@ -676,7 +696,7 @@ class TagController {
       );
       res.status(201).json({ id: tagId, tag_name });
     } catch (error) {
-      this.logger.error("Error creating tag:", error);
+      this.logger.log("error", "Error creating tag:", error);
       res.status(400).json({ error: "Failed to create tag" });
     }
   }
@@ -690,7 +710,7 @@ class TagController {
       );
       res.json({ id: req.params.id, tag_name });
     } catch (error) {
-      this.logger.error("Error updating tag:", error);
+      this.logger.log("error", "Error updating tag:", error);
       res.status(400).json({ error: "Failed to update tag" });
     }
   }
@@ -703,7 +723,7 @@ class TagController {
       ]);
       res.status(204).send();
     } catch (error) {
-      this.logger.error("Error deleting tag:", error);
+      this.logger.log("error", "Error deleting tag:", error);
       res.status(400).json({ error: "Failed to delete tag" });
     }
   }
@@ -754,7 +774,7 @@ class BudgetController {
       );
       res.json(budgets);
     } catch (error) {
-      this.logger.error("Error fetching budgets:", error);
+      this.logger.log("error", "Error fetching budgets:", error);
       res.status(500).json({ error: "Failed to fetch budgets" });
     }
   }
@@ -769,7 +789,7 @@ class BudgetController {
       );
       res.status(201).json({ id: budgetId, ...req.body });
     } catch (error) {
-      this.logger.error("Error creating budget:", error);
+      this.logger.log("error", "Error creating budget:", error);
       res.status(400).json({ error: "Failed to create budget" });
     }
   }
@@ -786,7 +806,7 @@ class BudgetController {
         res.status(404).json({ error: "Budget not found" });
       }
     } catch (error) {
-      this.logger.error("Error fetching budget:", error);
+      this.logger.log("error", "Error fetching budget:", error);
       res.status(500).json({ error: "Failed to fetch budget" });
     }
   }
@@ -800,7 +820,7 @@ class BudgetController {
       );
       res.json({ id: req.params.id, ...req.body });
     } catch (error) {
-      this.logger.error("Error updating budget:", error);
+      this.logger.log("error", "Error updating budget:", error);
       res.status(400).json({ error: "Failed to update budget" });
     }
   }
@@ -813,7 +833,7 @@ class BudgetController {
       );
       res.status(204).send();
     } catch (error) {
-      this.logger.error("Error deleting budget:", error);
+      this.logger.log("error", "Error deleting budget:", error);
       res.status(400).json({ error: "Failed to delete budget" });
     }
   }
@@ -831,14 +851,17 @@ class FinsyncApp {
     this.setupControllers();
     this.setupErrorHandling();
     this.setupStaticFiles();
+    this.logger.log("info", "Initializing Finsync application");
   }
 
   setupMiddleware() {
+    this.logger.log("debug", "Setting up middleware");
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({ extended: true }));
   }
 
   setupSwagger() {
+    this.logger.log("debug", "Setting up Swagger documentation");
     const swaggerDocument = YAML.load(path.join(__dirname, "openapi.yaml"));
     this.app.use(
       "/api-docs",
@@ -848,6 +871,7 @@ class FinsyncApp {
   }
 
   setupControllers() {
+    this.logger.log("debug", "Setting up controllers");
     const authController = new AuthController(
       this.dbService,
       this.logger,
@@ -911,18 +935,28 @@ class FinsyncApp {
     };
 
     this.app.use((err, req, res) => {
-      this.logger.error("Unhandled error:", err);
-      handleError(500, {
-        error: "Internal Server Error",
-        message:"An unexpected error occurred"
-      }, req, res);
+      this.logger.log("error", "Unhandled error:", err);
+      handleError(
+        500,
+        {
+          error: "Internal Server Error",
+          message: "An unexpected error occurred",
+        },
+        req,
+        res
+      );
     });
     this.app.use((req, res) => {
-      this.logger.error("Not found error:", req.originalUrl);
-      handleError(404, {
-        error: "Not Found",
-        message: "The requested resource was not found"
-      }, req, res);
+      this.logger.log("error", "Not found error:", req.originalUrl);
+      handleError(
+        404,
+        {
+          error: "Not Found",
+          message: "The requested resource was not found",
+        },
+        req,
+        res
+      );
     });
   }
 
@@ -931,8 +965,9 @@ class FinsyncApp {
   }
 
   start(port = 3000) {
+    this.logger.log("info", "Starting server", { port });
     return this.app.listen(port, () => {
-      this.logger.log(`Server running on port ${port}`);
+      this.logger.log("info", `Server running on port ${port}`);
     });
   }
 }
