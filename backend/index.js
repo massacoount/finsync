@@ -901,7 +901,7 @@ class FinsyncApp {
     this.app.use("/auth", authController.router);
     this.app.use(
       "/accounts",
-      this.oauthService.authenticateRequest(),
+      //this.oauthService.authenticateRequest(),
       accountController.router
     );
     this.app.use(
