@@ -1,634 +1,723 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const mysql = require("mysql");
-const { v4: uuidv4 } = require("uuid");
-const jwt = require("jsonwebtoken");
-const { body, validationResult } = require("express-validator");
-const swaggerUi = require("swagger-ui-express");
-const specs = require('./doc');
+require('dotenv').config();
+const express = require('express');
+const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
-const app = express();
-app.use(bodyParser.json());
-require('dotenv').config()
+const mysql = require('mysql');
+const winston = require('winston');
+const swaggerUi = require('swagger-ui-express');
+const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
+const OAuth2Server = require('oauth2-server');
+const YAML = require('yamljs');
+const path = require('path');
 
-// JWT secret keys (use environment variables in production)
-const JWT_SECRET = process.env.FINSYNC_JWT_SECRET;
-const JWT_REFRESH_SECRET = process.env.FINSYNC_JWT_REFRESH_SECRET;
-
-const connection = mysql.createConnection({
-  port: process.env.FINSYNC_DB_PORT.trim(),
-  host: process.env.FINSYNC_DB_HOST.trim(),
-  user: process.env.FINSYNC_DB_USER.trim(),
-  password: process.env.FINSYNC_DB_PASSWORD.trim(),
-  database: process.env.FINSYNC_DB_NAME.trim(),
-});
-
-connection.connect((err) => {
-  if (err) {
-    console.error({
-      port: process.env.FINSYNC_DB_PORT.trim(),
-      host: process.env.FINSYNC_DB_HOST.trim(),
-      user: process.env.FINSYNC_DB_USER.trim(),
-      password: process.env.FINSYNC_DB_PASSWORD.trim(),
-      database: process.env.FINSYNC_DB_NAME.trim(),
+class DatabaseService {
+  constructor() {
+    this.pool = mysql.createPool({
+      connectionLimit: 10,
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
     });
-    console.error("Error connecting to MySQL: ", err);
-    process.exit(1);
   }
-  console.log("Connected to MySQL.");
-});
 
-/*
-  ---------------------------
-  Validation Middleware Example
-  ---------------------------
-*/
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers["authorization"];
-  // Expecting header "Authorization: Bearer <token>"
-  const token = authHeader && authHeader.split(" ")[1];
-  if (!token) return res.status(401).json({ error: "Access token required" });
+  query(sql, params) {
+    return new Promise((resolve, reject) => {
+      this.pool.query(sql, params, (error, results) => {
+        if (error) reject(error);
+        else resolve(results);
+      });
+    });
+  }
 
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: "Invalid or expired token" });
-    req.user = user;
-    next();
-  });
+  getConnection() {
+    return new Promise((resolve, reject) => {
+      this.pool.getConnection((err, conn) => {
+        if (err) reject(err);
+        else resolve(conn);
+      });
+    });
+  }
 }
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
-
-/*
-  ---------------------------
-  CRUD Endpoints
-  ---------------------------
-*/
-
-// ===== User Endpoints =====
-
-// User validation middleware
-const validateUser = [
-  body('email').isEmail().normalizeEmail().withMessage('Invalid email address'),
-  body('password')
-    .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters')
-    .matches(/\d/)
-    .withMessage('Password must contain a number')
-    .matches(/[A-Z]/)
-    .withMessage('Password must contain an uppercase letter'),
-  body('name').trim().notEmpty().withMessage('Name is required'),
-];
-
-// Create a new user
-app.post("/users", validateUser, async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { email, password, name } = req.body;
-    const id = uuidv4();
-    
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-    
-    const query = 'INSERT INTO users (id, email, password, name) VALUES (?, ?, ?, ?)';
-    connection.query(query, [id, email, hashedPassword, name], (err) => {
-      if (err) {
-        console.error('Error creating user: ', err);
-        return res.status(500).json({ error: 'Database error' });
-      }
-      // Return user without password
-      res.status(201).json({ id, email, name });
+class LoggerService {
+  constructor() {
+    this.logger = winston.createLogger({
+      level: 'info',
+      format: winston.format.json(),
+      transports: [new winston.transports.Console()],
     });
-  } catch (error) {
-    console.error('Error creating user:', error);
-    res.status(500).json({ error: 'Server error' });
   }
-});
 
-// Read all users
-app.get("/users", authenticateToken, (req, res) => {
-  connection.query('SELECT id, email, name FROM users', (err, results) => {
-    if (err) {
-      console.error('Error fetching users: ', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    res.json(results);
-  });
-});
+  log(message, meta) {
+    this.logger.log('info', message, meta);
+  }
 
-// Read a single user
-app.get("/users/:id", authenticateToken, (req, res) => {
-  connection.query('SELECT id, email, name FROM users WHERE id = ?', [req.params.id], (err, results) => {
-    if (err) {
-      console.error('Error fetching user: ', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (!results.length) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    res.json(results[0]);
-  });
-});
+  error(message, meta) {
+    this.logger.log('error', message, meta);
+  }
+}
 
-// Update user
-app.put('/users/:id', authenticateToken, validateUser, async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { email, password, name } = req.body;
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-    
-    const query = 'UPDATE users SET email = ?, password = ?, name = ? WHERE id = ?';
-    connection.query(query, [email, hashedPassword, name, req.params.id], (err) => {
-      if (err) {
-        console.error('Error updating user: ', err);
-        return res.status(500).json({ error: 'Database error' });
-      }
-      res.json({ message: 'User updated' });
+class OAuthService {
+  constructor(dbService, logger) {
+    this.db = dbService;
+    this.logger = logger;
+    this.oauth = new OAuth2Server({
+      model: this,
+      grants: ['authorization_code', 'refresh_token', 'password'],
+      accessTokenLifetime: 3600, // 1 hour
+      allowBearerTokensInQueryString: false
     });
-  } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).json({ error: 'Server error' });
   }
-});
 
-// Delete user
-app.delete("/users/:id", authenticateToken, (req, res) => {
-  connection.query("DELETE FROM users WHERE id = ?", [req.params.id], (err) => {
-    if (err) {
-      console.error("Error deleting user: ", err);
-      return res.status(500).json({ error: "Database error" });
+  async getClient(clientId, clientSecret) {
+    const [client] = await this.db.query(
+      'SELECT * FROM oauth_client WHERE client_id = ? AND client_secret = ?',
+      [clientId, clientSecret]
+    );
+    if (!client) return null;
+    return {
+      id: client.client_id,
+      grants: JSON.parse(client.allowed_grants),
+      redirectUris: [client.redirect_uri]
+    };
+  }
+
+  async getUser(username, password) {
+    const [user] = await this.db.query(
+      'SELECT * FROM user WHERE email = ?',
+      [username]
+    );
+    if (!user || !(await bcrypt.compare(password, user.hash))) {
+      return null;
     }
-    res.json({ message: "User deleted" });
-  });
-});
+    return { id: user.id };
+  }
 
-// ===== Categories Endpoints =====
-app.post("/categories", authenticateToken, (req, res) => {
-  const { name, type, notes } = req.body;
-  const id = uuidv4();
-  const query =
-    "INSERT INTO categories (id, name, type, notes) VALUES (?, ?, ?, ?)";
-  connection.query(query, [id, name, type, notes], (err) => {
-    if (err) {
-      console.error("Error creating category: ", err);
-      return res.status(500).json({ error: "Database error" });
+  async saveToken(token, client, user) {
+    await this.db.query(
+      'INSERT INTO oauth_token (access_token, access_token_expires, client_id, user_id, refresh_token, scope) VALUES (?, ?, ?, ?, ?, ?)',
+      [token.accessToken, token.accessTokenExpiresAt, client.id, user.id, token.refreshToken, token.scope]
+    );
+    return { ...token, client, user };
+  }
+
+  async getAccessToken(accessToken) {
+    const [token] = await this.db.query(
+      `SELECT t.*, u.* FROM oauth_token t 
+       JOIN user u ON t.user_id = u.id 
+       WHERE access_token = ? AND access_token_expires > NOW()`,
+      [accessToken]
+    );
+    if (!token) return null;
+    return {
+      accessToken: token.access_token,
+      accessTokenExpiresAt: token.access_token_expires,
+      scope: token.scope,
+      user: { id: token.user_id },
+      client: { id: token.client_id }
+    };
+  }
+
+  async getAuthorizationCode(authorizationCode) {
+    const [code] = await this.db.query(
+      'SELECT * FROM oauth_code WHERE code = ? AND expires > NOW()',
+      [authorizationCode]
+    );
+    if (!code) return null;
+    return {
+      code: code.code,
+      expiresAt: code.expires,
+      redirectUri: code.redirect_uri,
+      scope: code.scope,
+      client: { id: code.client_id },
+      user: { id: code.user_id }
+    };
+  }
+
+  async saveAuthorizationCode(code, client, user) {
+    const authCode = {
+      code: code.authorizationCode,
+      expires: code.expiresAt,
+      redirect_uri: code.redirectUri,
+      scope: code.scope,
+      client_id: client.id,
+      user_id: user.id
+    };
+
+    await this.db.query('INSERT INTO oauth_code SET ?', authCode);
+    return { ...code, client, user };
+  }
+
+  async revokeAuthorizationCode(code) {
+    await this.db.query('DELETE FROM oauth_code WHERE code = ?', [code.code]);
+    return true;
+  }
+
+  async validateScope(user, client, scope) {
+    if (!scope) return '';
+    const requestedScopes = scope.split(' ');
+    const [allowedScopes] = await this.db.query(
+      'SELECT allowed_scopes FROM oauth_client WHERE client_id = ?',
+      [client.id]
+    );
+    const validScopes = requestedScopes.filter(s => allowedScopes.allowed_scopes.includes(s));
+    return validScopes.join(' ');
+  }
+
+  async verifyScope(token, scope) {
+    if (!token.scope) return false;
+    const requestedScopes = scope.split(' ');
+    const tokenScopes = token.scope.split(' ');
+    return requestedScopes.every(s => tokenScopes.includes(s));
+  }
+
+  async handlePasswordGrant(req, res) {
+    const { username, password, client_id, client_secret, scope } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ error: 'invalid_request' });
     }
-    res.status(201).json({ id, name, type, notes });
-  });
-});
 
-app.get("/categories", authenticateToken, (req, res) => {
-  connection.query("SELECT * FROM categories", (err, results) => {
-    if (err) {
-      console.error("Error fetching categories: ", err);
-      return res.status(500).json({ error: "Database error" });
+    const client = await this.getClient(client_id, client_secret);
+    if (!client || !client.grants.includes('password')) {
+      return res.status(401).json({ error: 'invalid_client' });
     }
-    res.json(results);
-  });
-});
 
-app.get("/categories/:id", authenticateToken, (req, res) => {
-  connection.query(
-    "SELECT * FROM categories WHERE id = ?",
-    [req.params.id],
-    (err, results) => {
-      if (err) {
-        console.error("Error fetching category: ", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-      if (!results.length) {
-        return res.status(404).json({ message: "Category not found" });
-      }
-      res.json(results[0]);
+    const user = await this.getUser(username, password);
+    if (!user) {
+      return res.status(401).json({ error: 'invalid_grant' });
     }
-  );
-});
 
-app.put("/categories/:id", authenticateToken, (req, res) => {
-  const { name, type, notes } = req.body;
-  const query =
-    "UPDATE categories SET name = ?, type = ?, notes = ? WHERE id = ?";
-  connection.query(query, [name, type, notes, req.params.id], (err) => {
-    if (err) {
-      console.error("Error updating category: ", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    res.json({ message: "Category updated" });
-  });
-});
+    const validScope = await this.validateScope(user, client, scope);
+    const token = await this.generateToken(client, user, validScope);
 
-app.delete("/categories/:id", authenticateToken, (req, res) => {
-  connection.query(
-    "DELETE FROM categories WHERE id = ?",
-    [req.params.id],
-    (err) => {
-      if (err) {
-        console.error("Error deleting category: ", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-      res.json({ message: "Category deleted" });
-    }
-  );
-});
+    res.set('X-OAuth-Warning', 'Password grant is deprecated - prefer Authorization Code Flow with PKCE');
+    res.json(token);
+  }
 
-// ===== Accounts Endpoints =====
-app.post("/accounts", authenticateToken, (req, res) => {
-  const { name, account_type, description } = req.body;
-  const id = uuidv4();
-  const query =
-    "INSERT INTO accounts (id, name, account_type, description) VALUES (?, ?, ?, ?)";
-  connection.query(query, [id, name, account_type, description], (err) => {
-    if (err) {
-      console.error("Error creating account: ", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    res.status(201).json({ id, name, account_type, description });
-  });
-});
+  async generateToken(client, user, scope) {
+    const accessToken = crypto.randomBytes(32).toString('hex');
+    const refreshToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 3600 * 1000);
 
-app.get("/accounts", authenticateToken, (req, res) => {
-  connection.query("SELECT * FROM accounts", (err, results) => {
-    if (err) {
-      console.error("Error fetching accounts: ", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    res.json(results);
-  });
-});
+    await this.saveToken({
+      accessToken,
+      accessTokenExpiresAt: expiresAt,
+      refreshToken,
+      scope
+    }, client, user);
 
-app.get("/accounts/:id", authenticateToken, (req, res) => {
-  connection.query(
-    "SELECT * FROM accounts WHERE id = ?",
-    [req.params.id],
-    (err, results) => {
-      if (err) {
-        console.error("Error fetching account: ", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-      if (!results.length) {
-        return res.status(404).json({ message: "Account not found" });
-      }
-      res.json(results[0]);
-    }
-  );
-});
+    return {
+      access_token: accessToken,
+      token_type: 'Bearer',
+      expires_in: 3600,
+      refresh_token: refreshToken,
+      scope
+    };
+  }
 
-app.put("/accounts/:id", authenticateToken, (req, res) => {
-  const { name, account_type, description } = req.body;
-  const query =
-    "UPDATE accounts SET name = ?, account_type = ?, description = ? WHERE id = ?";
-  connection.query(
-    query,
-    [name, account_type, description, req.params.id],
-    (err) => {
-      if (err) {
-        console.error("Error updating account: ", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-      res.json({ message: "Account updated" });
-    }
-  );
-});
+  async tokenHandler(req, res) {
+    const request = new OAuth2Server.Request(req);
+    const response = new OAuth2Server.Response(res);
 
-app.delete("/accounts/:id", authenticateToken, (req, res) => {
-  connection.query(
-    "DELETE FROM accounts WHERE id = ?",
-    [req.params.id],
-    (err) => {
-      if (err) {
-        console.error("Error deleting account: ", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-      res.json({ message: "Account deleted" });
-    }
-  );
-});
-
-// ===== Transaction Endpoints =====
-app.post("/transactions", authenticateToken, (req, res) => {
-  const { date, amount, description, user_id, category_id, account_id } =
-    req.body;
-  const id = uuidv4();
-  const query =
-    "INSERT INTO transactions (id, date, amount, description, user_id, category_id, account_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
-  connection.query(
-    query,
-    [id, date, amount, description, user_id, category_id, account_id],
-    (err) => {
-      if (err) {
-        console.error("Error creating transaction: ", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-      res
-        .status(201)
-        .json({
-          id,
-          date,
-          amount,
-          description,
-          user_id,
-          category_id,
-          account_id,
-        });
-    }
-  );
-});
-
-app.get("/transactions", authenticateToken, (req, res) => {
-  connection.query("SELECT * FROM transactions", (err, results) => {
-    if (err) {
-      console.error("Error fetching transactions: ", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    res.json(results);
-  });
-});
-
-app.get("/transactions/:id", authenticateToken, (req, res) => {
-  connection.query(
-    "SELECT * FROM transactions WHERE id = ?",
-    [req.params.id],
-    (err, results) => {
-      if (err) {
-        console.error("Error fetching transaction: ", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-      if (!results.length) {
-        return res.status(404).json({ message: "Transaction not found" });
-      }
-      res.json(results[0]);
-    }
-  );
-});
-
-app.put("/transactions/:id", authenticateToken, (req, res) => {
-  const { date, amount, description, user_id, category_id, account_id } =
-    req.body;
-  const query =
-    "UPDATE transactions SET date = ?, amount = ?, description = ?, user_id = ?, category_id = ?, account_id = ? WHERE id = ?";
-  connection.query(
-    query,
-    [
-      date,
-      amount,
-      description,
-      user_id,
-      category_id,
-      account_id,
-      req.params.id,
-    ],
-    (err) => {
-      if (err) {
-        console.error("Error updating transaction: ", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-      res.json({ message: "Transaction updated" });
-    }
-  );
-});
-
-app.delete("/transactions/:id", authenticateToken, (req, res) => {
-  connection.query(
-    "DELETE FROM transactions WHERE id = ?",
-    [req.params.id],
-    (err) => {
-      if (err) {
-        console.error("Error deleting transaction: ", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-      res.json({ message: "Transaction deleted" });
-    }
-  );
-});
-
-// ===== Journal Endpoints =====
-app.post("/journals", authenticateToken, (req, res) => {
-  const { date, journal_entry, transaction_id } = req.body;
-  const id = uuidv4();
-  const query =
-    "INSERT INTO journals (id, date, journal_entry, transaction_id) VALUES (?, ?, ?, ?)";
-  connection.query(query, [id, date, journal_entry, transaction_id], (err) => {
-    if (err) {
-      console.error("Error creating journal entry: ", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    res.status(201).json({ id, date, journal_entry, transaction_id });
-  });
-});
-
-app.get("/journals", authenticateToken, (req, res) => {
-  connection.query("SELECT * FROM journals", (err, results) => {
-    if (err) {
-      console.error("Error fetching journals: ", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    res.json(results);
-  });
-});
-
-app.get("/journals/:id", authenticateToken, (req, res) => {
-  connection.query(
-    "SELECT * FROM journals WHERE id = ?",
-    [req.params.id],
-    (err, results) => {
-      if (err) {
-        console.error("Error fetching journal: ", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-      if (!results.length) {
-        return res.status(404).json({ message: "Journal not found" });
-      }
-      res.json(results[0]);
-    }
-  );
-});
-
-app.put("/journals/:id", authenticateToken, (req, res) => {
-  const { date, journal_entry, transaction_id } = req.body;
-  const query =
-    "UPDATE journals SET date = ?, journal_entry = ?, transaction_id = ? WHERE id = ?";
-  connection.query(
-    query,
-    [date, journal_entry, transaction_id, req.params.id],
-    (err) => {
-      if (err) {
-        console.error("Error updating journal: ", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-      res.json({ message: "Journal updated" });
-    }
-  );
-});
-
-app.delete("/journals/:id", authenticateToken, (req, res) => {
-  connection.query(
-    "DELETE FROM journals WHERE id = ?",
-    [req.params.id],
-    (err) => {
-      if (err) {
-        console.error("Error deleting journal: ", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-      res.json({ message: "Journal deleted" });
-    }
-  );
-});
-
-// ===== BudgetTargets Endpoints =====
-app.post("/budget-targets", authenticateToken, (req, res) => {
-  const { category_id, monthly_target, notes } = req.body;
-  const id = uuidv4();
-  const query =
-    "INSERT INTO budget_targets (id, category_id, monthly_target, notes) VALUES (?, ?, ?, ?)";
-  connection.query(query, [id, category_id, monthly_target, notes], (err) => {
-    if (err) {
-      console.error("Error creating budget target: ", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    res.status(201).json({ id, category_id, monthly_target, notes });
-  });
-});
-
-app.get("/budget-targets", authenticateToken, (req, res) => {
-  connection.query("SELECT * FROM budget_targets", (err, results) => {
-    if (err) {
-      console.error("Error fetching budget targets: ", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    res.json(results);
-  });
-});
-
-app.get("/budget-targets/:id", authenticateToken, (req, res) => {
-  connection.query(
-    "SELECT * FROM budget_targets WHERE id = ?",
-    [req.params.id],
-    (err, results) => {
-      if (err) {
-        console.error("Error fetching budget target: ", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-      if (!results.length) {
-        return res.status(404).json({ message: "Budget target not found" });
-      }
-      res.json(results[0]);
-    }
-  );
-});
-
-app.put("/budget-targets/:id", authenticateToken, (req, res) => {
-  const { category_id, monthly_target, notes } = req.body;
-  const query =
-    "UPDATE budget_targets SET category_id = ?, monthly_target = ?, notes = ? WHERE id = ?";
-  connection.query(
-    query,
-    [category_id, monthly_target, notes, req.params.id],
-    (err) => {
-      if (err) {
-        console.error("Error updating budget target: ", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-      res.json({ message: "Budget target updated" });
-    }
-  );
-});
-
-app.delete("/budget-targets/:id", authenticateToken, (req, res) => {
-  connection.query(
-    "DELETE FROM budget_targets WHERE id = ?",
-    [req.params.id],
-    (err) => {
-      if (err) {
-        console.error("Error deleting budget target: ", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-      res.json({ message: "Budget target deleted" });
-    }
-  );
-});
-
-/*
-  ---------------------------
-  JWT OAuth Token Endpoints (Password Grant Type)
-  ---------------------------
-*/
-
-app.post(
-  "/auth/token",
-  [body("email").isEmail(), body("password").notEmpty()],
-  async (req, res) => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+      if (request.body.grant_type === 'password') {
+        return this.handlePasswordGrant(req, res);
       }
 
-      const { email, password } = req.body;
-      const query = 'SELECT * FROM users WHERE email = ?';
-      
-      connection.query(query, [email], async (err, results) => {
-        if (err) {
-          console.error('Database error:', err);
-          return res.status(500).json({ error: 'Database error' });
-        }
-        
-        if (!results.length) {
-          return res.status(401).json({ error: 'Invalid credentials' });
-        }
-        
-        const user = results[0];
-        const validPassword = await bcrypt.compare(password, user.password);
-        
-        if (!validPassword) {
-          return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const accessToken = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '15m' });
-        const refreshToken = jwt.sign({ userId: user.id }, JWT_REFRESH_SECRET, { expiresIn: '7d' });
-        
-        res.json({ accessToken, refreshToken });
-      });
-    } catch (error) {
-      console.error('Authentication error:', error);
-      res.status(500).json({ error: 'Server error' });
+      const token = await this.oauth.token(request, response);
+      res.json(token);
+    } catch (err) {
+      this.logger.error('Token error:', err);
+      res.status(err.code || 500).json(this.formatOAuthError(err));
     }
   }
-);
 
-app.post("/auth/refresh", [body("refreshToken").notEmpty()], (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+  async authorizeHandler(req, res) {
+    const request = new OAuth2Server.Request(req);
+    const response = new OAuth2Server.Response(res);
+
+    try {
+      const authParams = await this.oauth.authorize(request, response);
+      res.redirect(`${authParams.redirectUri}?code=${authParams.authorizationCode}`);
+    } catch (err) {
+      this.logger.error('Authorization error:', err);
+      res.status(err.code || 500).json(this.formatOAuthError(err));
+    }
   }
-  const { refreshToken } = req.body;
-  try {
-    const payload = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
-    // Generate a new access token
-    const newAccessToken = jwt.sign({ userId: payload.userId }, JWT_SECRET, {
-      expiresIn: "15m",
+
+  formatOAuthError(error) {
+    return {
+      error: error.name,
+      error_description: error.message
+    };
+  }
+}
+
+class AuthController {
+  constructor(dbService, logger, oauthService) {
+    this.db = dbService;
+    this.logger = logger;
+    this.oauthService = oauthService;
+    this.router = express.Router();
+    this.initializeRoutes();
+  }
+
+  initializeRoutes() {
+    this.router.get('/authorize', this.authorize.bind(this));
+    this.router.post('/token', this.token.bind(this));
+    this.router.get('/userinfo', this.authenticateToken.bind(this), this.userInfo.bind(this));
+  }
+
+  async authorize(req, res) {
+    await this.oauthService.authorizeHandler(req, res);
+  }
+
+  async token(req, res) {
+    await this.oauthService.tokenHandler(req, res);
+  }
+
+  async userInfo(req, res) {
+    const [user] = await this.db.query(
+      'SELECT id, name, email FROM user WHERE id = ?',
+      [req.user.id]
+    );
+    res.json({
+      sub: user.id,
+      name: user.name,
+      email: user.email,
+      email_verified: true
     });
-    res.json({ accessToken: newAccessToken });
-  } catch (err) {
-    console.error("Refresh token error:", err);
-    res.status(401).json({ error: "Invalid refresh token" });
   }
-});
 
-/*
-  ---------------------------
-  Start the Server
-  ---------------------------
-*/
-const PORT = process.env.FINSYNC_PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+  async authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (!token) return res.status(401).json({ error: 'invalid_token' });
+
+    try {
+      const request = new OAuth2Server.Request(req);
+      const response = new OAuth2Server.Response(res);
+      const token = await this.oauthService.oauth.authenticate(request, response);
+      req.user = token.user;
+      next();
+    } catch (err) {
+      res.status(401).json(this.oauthService.formatOAuthError(err));
+    }
+  }
+}
+
+class AccountController {
+    constructor(dbService, logger) {
+      this.db = dbService;
+      this.logger = logger;
+      this.router = express.Router();
+      this.initializeRoutes();
+    }
+  
+    initializeRoutes() {
+      this.router.get('/', this.getAccounts.bind(this));
+      this.router.post('/', this.createAccount.bind(this));
+      this.router.get('/:id', this.getAccount.bind(this));
+      this.router.put('/:id', this.updateAccount.bind(this));
+      this.router.delete('/:id', this.deleteAccount.bind(this));
+    }
+  
+    async getAccounts(req, res) {
+      try {
+        const accounts = await this.db.query(
+          'SELECT * FROM account WHERE user_id = ?',
+          [req.user.id]
+        );
+        res.json(accounts);
+      } catch (error) {
+        this.logger.error('Error fetching accounts:', error);
+        res.status(500).json({ error: 'Failed to fetch accounts' });
+      }
+    }
+  
+    async createAccount(req, res) {
+      const { account_name, opening_balance, account_type } = req.body;
+      try {
+        const result = await this.db.query(
+          'INSERT INTO account (account_id, user_id, account_name, opening_balance, current_balance, account_type, opening_date) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [uuidv4(), req.user.id, account_name, opening_balance, opening_balance, account_type, new Date()]
+        );
+        res.status(201).json({ id: result.insertId, ...req.body });
+      } catch (error) {
+        this.logger.error('Error creating account:', error);
+        res.status(400).json({ error: 'Failed to create account' });
+      }
+    }
+  
+    async getAccount(req, res) {
+      try {
+        const [account] = await this.db.query(
+          'SELECT * FROM account WHERE account_id = ? AND user_id = ?',
+          [req.params.id, req.user.id]
+        );
+        if (account) {
+          res.json(account);
+        } else {
+          res.status(404).json({ error: 'Account not found' });
+        }
+      } catch (error) {
+        this.logger.error('Error fetching account:', error);
+        res.status(500).json({ error: 'Failed to fetch account' });
+      }
+    }
+  
+    async updateAccount(req, res) {
+      const { account_name, account_type } = req.body;
+      try {
+        await this.db.query(
+          'UPDATE account SET account_name = ?, account_type = ? WHERE account_id = ? AND user_id = ?',
+          [account_name, account_type, req.params.id, req.user.id]
+        );
+        res.json({ id: req.params.id, ...req.body });
+      } catch (error) {
+        this.logger.error('Error updating account:', error);
+        res.status(400).json({ error: 'Failed to update account' });
+      }
+    }
+  
+    async deleteAccount(req, res) {
+      try {
+        await this.db.query(
+          'DELETE FROM account WHERE account_id = ? AND user_id = ?',
+          [req.params.id, req.user.id]
+        );
+        res.status(204).send();
+      } catch (error) {
+        this.logger.error('Error deleting account:', error);
+        res.status(400).json({ error: 'Failed to delete account' });
+      }
+    }
+  }
+  
+  class TransactionController {
+    constructor(dbService, logger) {
+      this.db = dbService;
+      this.logger = logger;
+      this.router = express.Router();
+      this.initializeRoutes();
+    }
+  
+    initializeRoutes() {
+      this.router.get('/', this.getTransactions.bind(this));
+      this.router.post('/', this.createTransaction.bind(this));
+      this.router.get('/:id', this.getTransaction.bind(this));
+      this.router.put('/:id', this.updateTransaction.bind(this));
+      this.router.delete('/:id', this.deleteTransaction.bind(this));
+    }
+  
+    async getTransactions(req, res) {
+      try {
+        const transactions = await this.db.query(
+          'SELECT * FROM transaction WHERE user_id = ?',
+          [req.user.id]
+        );
+        res.json(transactions);
+      } catch (error) {
+        this.logger.error('Error fetching transactions:', error);
+        res.status(500).json({ error: 'Failed to fetch transactions' });
+      }
+    }
+  
+    async createTransaction(req, res) {
+      const { description, amount, from_account_id, to_account_id, category_id, tag_id } = req.body;
+      const connection = await this.db.getConnection();
+      try {
+        await connection.beginTransaction();
+  
+        const transactionId = uuidv4();
+        await connection.query(
+          'INSERT INTO transaction (transaction_id, user_id, description, amount, from_account_id, to_account_id, category_id, tag_id, transaction_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [transactionId, req.user.id, description, amount, from_account_id, to_account_id, category_id, tag_id, new Date()]
+        );
+  
+        // Update account balances
+        await connection.query(
+          'UPDATE account SET current_balance = current_balance - ? WHERE account_id = ?',
+          [amount, from_account_id]
+        );
+        await connection.query(
+          'UPDATE account SET current_balance = current_balance + ? WHERE account_id = ?',
+          [amount, to_account_id]
+        );
+  
+        await connection.commit();
+        res.status(201).json({ id: transactionId, ...req.body });
+      } catch (error) {
+        await connection.rollback();
+        this.logger.error('Error creating transaction:', error);
+        res.status(400).json({ error: 'Failed to create transaction' });
+      } finally {
+        connection.release();
+      }
+    }
+  
+    async getTransaction(req, res) {
+      try {
+        const [transaction] = await this.db.query(
+          'SELECT * FROM transaction WHERE transaction_id = ? AND user_id = ?',
+          [req.params.id, req.user.id]
+        );
+        if (transaction) {
+          res.json(transaction);
+        } else {
+          res.status(404).json({ error: 'Transaction not found' });
+        }
+      } catch (error) {
+        this.logger.error('Error fetching transaction:', error);
+        res.status(500).json({ error: 'Failed to fetch transaction' });
+      }
+    }
+  
+    async updateTransaction(req, res) {
+      // Updating transactions might require complex logic to handle balance adjustments
+      // This is a simplified version
+      const { description, category_id, tag_id } = req.body;
+      try {
+        await this.db.query(
+          'UPDATE transaction SET description = ?, category_id = ?, tag_id = ? WHERE transaction_id = ? AND user_id = ?',
+          [description, category_id, tag_id, req.params.id, req.user.id]
+        );
+        res.json({ id: req.params.id, ...req.body });
+      } catch (error) {
+        this.logger.error('Error updating transaction:', error);
+        res.status(400).json({ error: 'Failed to update transaction' });
+      }
+    }
+  
+    async deleteTransaction(req, res) {
+      // Deleting transactions might require complex logic to handle balance adjustments
+      // This is a simplified version
+      try {
+        await this.db.query(
+          'DELETE FROM transaction WHERE transaction_id = ? AND user_id = ?',
+          [req.params.id, req.user.id]
+        );
+        res.status(204).send();
+      } catch (error) {
+        this.logger.error('Error deleting transaction:', error);
+        res.status(400).json({ error: 'Failed to delete transaction' });
+      }
+    }
+  }
+  
+  class TagController {
+    constructor(dbService, logger) {
+      this.db = dbService;
+      this.logger = logger;
+      this.router = express.Router();
+      this.initializeRoutes();
+    }
+  
+    initializeRoutes() {
+      this.router.get('/', this.getTags.bind(this));
+      this.router.post('/', this.createTag.bind(this));
+      this.router.put('/:id', this.updateTag.bind(this));
+      this.router.delete('/:id', this.deleteTag.bind(this));
+    }
+  
+    async getTags(req, res) {
+      try {
+        const tags = await this.db.query(
+          'SELECT * FROM tag WHERE user_id = ?',
+          [req.user.id]
+        );
+        res.json(tags);
+      } catch (error) {
+        this.logger.error('Error fetching tags:', error);
+        res.status(500).json({ error: 'Failed to fetch tags' });
+      }
+    }
+  
+    async createTag(req, res) {
+      const { tag_name } = req.body;
+      try {
+        const result = await this.db.query(
+          'INSERT INTO tag (tag_id, user_id, tag_name) VALUES (?, ?, ?)',
+          [uuidv4(), req.user.id, tag_name]
+        );
+        res.status(201).json({ id: result.insertId, tag_name });
+      } catch (error) {
+        this.logger.error('Error creating tag:', error);
+        res.status(400).json({ error: 'Failed to create tag' });
+      }
+    }
+  
+    async updateTag(req, res) {
+      const { tag_name } = req.body;
+      try {
+        await this.db.query(
+          'UPDATE tag SET tag_name = ? WHERE tag_id = ? AND user_id = ?',
+          [tag_name, req.params.id, req.user.id]
+        );
+        res.json({ id: req.params.id, tag_name });
+      } catch (error) {
+        this.logger.error('Error updating tag:', error);
+        res.status(400).json({ error: 'Failed to update tag' });
+      }
+    }
+  
+    async deleteTag(req, res) {
+      try {
+        await this.db.query(
+          'DELETE FROM tag WHERE tag_id = ? AND user_id = ?',
+          [req.params.id, req.user.id]
+        );
+        res.status(204).send();
+      } catch (error) {
+        this.logger.error('Error deleting tag:', error);
+        res.status(400).json({ error: 'Failed to delete tag' });
+      }
+    }
+  }
+  
+  class BudgetController {
+    constructor(dbService, logger) {
+      this.db = dbService;
+      this.logger = logger;
+      this.router = express.Router();
+      this.initializeRoutes();
+    }
+  
+    initializeRoutes() {
+      this.router.get('/', this.getBudgets.bind(this));
+      this.router.post('/', this.createBudget.bind(this));
+      this.router.get('/:id', this.getBudget.bind(this));
+      this.router.put('/:id', this.updateBudget.bind(this));
+      this.router.delete('/:id', this.deleteBudget.bind(this));
+    }
+  
+    async getBudgets(req, res) {
+      try {
+        const budgets = await this.db.query(
+          'SELECT * FROM budget WHERE user_id = ?',
+          [req.user.id]
+        );
+        res.json(budgets);
+      } catch (error) {
+        this.logger.error('Error fetching budgets:', error);
+        res.status(500).json({ error: 'Failed to fetch budgets' });
+      }
+    }
+  
+    async createBudget(req, res) {
+      const { category_id, amount, start_date, end_date } = req.body;
+      try {
+        const result = await this.db.query(
+          'INSERT INTO budget (budget_id, user_id, category_id, amount, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?)',
+          [uuidv4(), req.user.id, category_id, amount, start_date, end_date]
+        );
+        res.status(201).json({ id: result.insertId, ...req.body });
+      } catch (error) {
+        this.logger.error('Error creating budget:', error);
+        res.status(400).json({ error: 'Failed to create budget' });
+      }
+    }
+  
+    async getBudget(req, res) {
+      try {
+        const [budget] = await this.db.query(
+          'SELECT * FROM budget WHERE budget_id = ? AND user_id = ?',
+          [req.params.id, req.user.id]
+        );
+        if (budget) {
+          res.json(budget);
+        } else {
+          res.status(404).json({ error: 'Budget not found' });
+        }
+      } catch (error) {
+        this.logger.error('Error fetching budget:', error);
+        res.status(500).json({ error: 'Failed to fetch budget' });
+      }
+    }
+  
+    async updateBudget(req, res) {
+      const { category_id, amount, start_date, end_date } = req.body;
+      try {
+        await this.db.query(
+          'UPDATE budget SET category_id = ?, amount = ?, start_date = ?, end_date = ? WHERE budget_id = ? AND user_id = ?',
+          [category_id, amount, start_date, end_date, req.params.id, req.user.id]
+        );
+        res.json({ id: req.params.id, ...req.body });
+      } catch (error) {
+        this.logger.error('Error updating budget:', error);
+        res.status(400).json({ error: 'Failed to update budget' });
+      }
+    }
+  
+    async deleteBudget(req, res) {
+      try {
+        await this.db.query(
+          'DELETE FROM budget WHERE budget_id = ? AND user_id = ?',
+          [req.params.id, req.user.id]
+        );
+        res.status(204).send();
+      } catch (error) {
+        this.logger.error('Error deleting budget:', error);
+        res.status(400).json({ error: 'Failed to delete budget' });
+      }
+    }
+  }
+    
+
+class FinsyncApp {
+  constructor() {
+    this.app = express();
+    this.dbService = new DatabaseService();
+    this.logger = new LoggerService();
+    this.oauthService = new OAuthService(this.dbService, this.logger);
+    this.setupMiddleware();
+    this.setupSwagger();
+    this.setupControllers();
+    this.setupErrorHandling();
+  }
+
+  setupMiddleware() {
+    this.app.use(bodyParser.json());
+    this.app.use(bodyParser.urlencoded({ extended: true }));
+  }
+
+  setupSwagger() {
+    const swaggerDocument = YAML.load(path.join(__dirname, 'openapi.yaml'));
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+  }
+
+  setupControllers() {
+    const authController = new AuthController(this.dbService, this.logger, this.oauthService);
+    const accountController = new AccountController(this.dbService, this.logger);
+    const transactionController = new TransactionController(this.dbService, this.logger);
+    const tagController = new TagController(this.dbService, this.logger);
+    const budgetController = new BudgetController(this.dbService, this.logger);
+
+    this.app.use('/auth', authController.router);
+    this.app.use('/accounts', this.oauthService.oauth.authenticate(), accountController.router);
+    this.app.use('/transactions', this.oauthService.oauth.authenticate(), transactionController.router);
+    this.app.use('/tags', this.oauthService.oauth.authenticate(), tagController.router);
+    this.app.use('/budgets', this.oauthService.oauth.authenticate(), budgetController.router);
+  }
+
+  setupErrorHandling() {
+    this.app.use((err, req, res) => {
+      this.logger.log('error', err.stack);
+      res.status(500).send('Internal Server Error');
+    });
+  }
+
+  start(port = 3000) {
+    return this.app.listen(port, () => {
+      this.logger.log('info', `Server running on port ${port}`);
+    });
+  }
+}
+
+// Usage
+const app = new FinsyncApp();
+app.start(process.env.PORT || 3000);
