@@ -14,8 +14,7 @@ const { validationResult } = require("express-validator");
 
 class DatabaseService {
   constructor() {
-    this.pool = mysql.createPool({
-      connectionLimit: 10,
+    this.connection = mysql.createConnection({
       host: process.env.DB_HOST,
       port: process.env.DB_PORT,
       user: process.env.DB_USER,
@@ -26,7 +25,7 @@ class DatabaseService {
 
   query(sql, params) {
     return new Promise((resolve, reject) => {
-      this.pool.query(sql, params, (error, results) => {
+      this.connection.query(sql, params, (error, results) => {
         if (error) reject(error);
         else resolve(results);
       });
@@ -35,9 +34,9 @@ class DatabaseService {
 
   getConnection() {
     return new Promise((resolve, reject) => {
-      this.pool.getConnection((err, conn) => {
+      this.connection.connect((err) => {
         if (err) reject(err);
-        else resolve(conn);
+        else resolve(this.connection);
       });
     });
   }
