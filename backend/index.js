@@ -10,13 +10,14 @@ const crypto = require("crypto");
 const OAuth2Server = require("oauth2-server");
 const YAML = require("yamljs");
 const path = require("path");
-const { body, validationResult } = require("express-validator");
+const { validationResult } = require("express-validator");
 
 class DatabaseService {
   constructor() {
     this.pool = mysql.createPool({
       connectionLimit: 10,
       host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
@@ -898,12 +899,12 @@ class FinsyncApp {
   }
 
   setupErrorHandling() {
-    const handleError = (code, req, res) => {
+    const handleError = (code, error, req, res) => {
       const accept = req.accepts(["html", "json", "text"]);
       if (accept === "json") {
-        res.status(code).json({ error: "Not Found", url: req.originalUrl });
+        res.status(code).json(error);
       } else if (accept === "text") {
-        res.status(code).send(`Request ${req.originalUrl} not found`);
+        res.status(code).send(error.message);
       } else {
         res.status(code).sendFile(`${__dirname}/public/${code}.html`);
       }
@@ -911,11 +912,17 @@ class FinsyncApp {
 
     this.app.use((err, req, res) => {
       this.logger.error("Unhandled error:", err);
-      handleError(500, req, res);
+      handleError(500, {
+        error: "Internal Server Error",
+        message:"An unexpected error occurred"
+      }, req, res);
     });
     this.app.use((req, res) => {
       this.logger.error("Not found error:", req.originalUrl);
-      handleError(404, req, res);
+      handleError(404, {
+        error: "Not Found",
+        message: "The requested resource was not found"
+      }, req, res);
     });
   }
 
