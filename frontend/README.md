@@ -1,6 +1,6 @@
-# fin-sync-frontend
+# Finsync Frontend
 
-This template should help get you started developing with Vue 3 in Vite.
+This frontend is designed to capture transations directly through user interaction – users can log cash transactions through the app, and the system provides immediate feedback
 
 ## Recommended IDE Setup
 
