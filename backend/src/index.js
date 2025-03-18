@@ -124,8 +124,8 @@ class FinsyncApp {
       }
     };
 
-    this.app.use((err, req, res, _next) => {
-      this.logger.error("Unhandled error ", err);
+    this.app.use((req, res, _next) => {
+      this.logger.error("Unhandled error ", { url: req.originalUrl });
       handleError(
         500,
         {
