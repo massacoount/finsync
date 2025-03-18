@@ -1,0 +1,161 @@
+require("dotenv").config();
+const express = require("express");
+const bodyParser = require("body-parser");
+const bcrypt = require("bcrypt");
+const LoggerService = require("./shared/logger.js");
+const DatabaseService = require("./services/database.js");
+const swaggerUi = require("swagger-ui-express");
+const { v4: uuidv4 } = require("uuid");
+const crypto = require("crypto");
+const OAuth2Server = require("oauth2-server");
+const YAML = require("yamljs");
+const path = require("path");
+const { validationResult } = require("express-validator");
+
+class FinsyncApp {
+  constructor() {
+    try {
+      this.app = express();
+      this.logger = new LoggerService();
+      this.dbService = new DatabaseService(this.logger);
+      this.oauthService = new OAuthService(this.logger, this.dbService);
+      this.util = new Util(this.logger, this.oauthService);
+      this.setupMiddleware();
+      this.setupSwagger();
+      this.setupControllers();
+      this.setupErrorHandling();
+      this.setupStaticFiles();
+      this.logger.log("info", "Initializing Finsync application");
+    } catch (err) {
+      this.logger.log("error", "Error initializing Finsync application", err);
+    }
+  }
+
+  setupMiddleware() {
+    this.logger.log("debug", "Setting up middleware");
+    this.app.use(bodyParser.json());
+    this.app.use(bodyParser.urlencoded({ extended: true }));
+  }
+
+  setupSwagger() {
+    this.logger.log("debug", "Setting up Swagger documentation");
+    const swaggerDocument = YAML.load(path.join(__dirname, "openapi.yaml"));
+    this.app.use(
+      "/api-docs",
+      swaggerUi.serve,
+      swaggerUi.setup(swaggerDocument)
+    );
+  }
+
+  setupControllers() {
+    this.logger.log("debug", "Setting up controllers");
+    const authController = new AuthController(
+      this.logger,
+      this.dbService,
+      this.util,
+      this.oauthService
+    );
+    const accountController = new AccountController(
+      this.logger,
+      this.dbService,
+      this.util
+    );
+    const transactionController = new TransactionController(
+      this.logger,
+      this.dbService,
+      this.util
+    );
+    const tagController = new TagController(
+      this.logger,
+      this.dbService,
+      this.util
+    );
+    const budgetController = new BudgetController(
+      this.logger,
+      this.dbService,
+      this.util
+    );
+
+    this.app.use("/auth", authController.router);
+    this.app.use(
+      "/accounts",
+      //this.oauthService.authenticateRequest(),
+      accountController.router
+    );
+    this.app.use(
+      "/transactions",
+      this.oauthService.authenticateRequest(),
+      transactionController.router
+    );
+    this.app.use(
+      "/tags",
+      this.oauthService.authenticateRequest(),
+      tagController.router
+    );
+    this.app.use(
+      "/budgets",
+      this.oauthService.authenticateRequest(),
+      budgetController.router
+    );
+  }
+
+  setupErrorHandling() {
+    const handleError = (code, error, req, res) => {
+      const accept =
+        req.headers && req.headers["accept"]
+          ? req.headers["accept"]
+          : "application/json";
+      if (accept.includes("application/json")) {
+        res.status(code).json(error);
+      } else if (accept.includes("text/plain")) {
+        res.status(code).send(error.message);
+      } else {
+        res.status(code).sendFile(`${__dirname}/public/${code}.html`);
+      }
+    };
+
+    this.app.use((err, req, res) => {
+      this.logger.log("error", "Unhandled error:", err);
+      handleError(
+        500,
+        {
+          error: "Internal Server Error",
+          message: "An unexpected error occurred",
+        },
+        req,
+        res
+      );
+    });
+    this.app.use((req, res) => {
+      this.logger.log("error", "Not found error:", req.originalUrl);
+      handleError(
+        404,
+        {
+          error: "Not Found",
+          message: "The requested resource was not found",
+        },
+        req,
+        res
+      );
+    });
+  }
+
+  setupStaticFiles() {
+    this.app.use(express.static("public"));
+  }
+
+  start(port = 3000) {
+    try {
+      this.logger.log("info", "Starting server", { port });
+      return this.app.listen(port, () => {
+        this.logger.log("info", `Server running on port ${port}`);
+      });
+    } catch (err) {
+      this.logger.log("error", "Error starting server", err);
+    }
+  }
+}
+
+// Usage
+const app = new FinsyncApp();
+app.start(process.env.PORT || 3000);
