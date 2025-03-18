@@ -1,16 +1,18 @@
 require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
-const bcrypt = require("bcrypt");
-const LoggerService = require("./shared/logger.js");
+const LoggerService = require("./services/logger.js");
 const DatabaseService = require("./services/database.js");
+const OAuthService = require("./services/oauth.js");
+const Util = require("./utils/util.js");
+const AuthController = require("./controllers/auth.js");
+const AccountController = require("./controllers/account.js");
+const TransactionController = require("./controllers/transaction.js");
+const TagController = require("./controllers/tag.js");
+const BudgetController = require("./controllers/budget.js");
 const swaggerUi = require("swagger-ui-express");
-const { v4: uuidv4 } = require("uuid");
-const crypto = require("crypto");
-const OAuth2Server = require("oauth2-server");
 const YAML = require("yamljs");
 const path = require("path");
-const { validationResult } = require("express-validator");
 
 class FinsyncApp {
   constructor() {
@@ -19,12 +21,12 @@ class FinsyncApp {
       this.logger = new LoggerService();
       this.dbService = new DatabaseService(this.logger);
       this.oauthService = new OAuthService(this.logger, this.dbService);
-      this.util = new Util(this.logger, this.oauthService);
+      this.util = new Util(this.logger);
       this.setupMiddleware();
       this.setupSwagger();
       this.setupControllers();
-      this.setupErrorHandling();
       this.setupStaticFiles();
+      this.setupErrorHandling();
       this.logger.log("info", "Initializing Finsync application");
     } catch (err) {
       this.logger.log("error", "Error initializing Finsync application", err);

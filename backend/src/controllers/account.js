@@ -51,11 +51,9 @@ class AccountController {
   async createAccount(req, res) {
     const { account_name, opening_balance, account_type } = req.body;
     try {
-      const accountId = uuidv4();
       await this.db.query(
-        "INSERT INTO account (account_id, user_id, account_name, opening_balance, current_balance, account_type, opening_date) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO account (user_id, account_name, opening_balance, current_balance, account_type, opening_date) VALUES (?, ?, ?, ?, ?, ?, ?)",
         [
-          accountId,
           req.user.id,
           account_name,
           opening_balance,

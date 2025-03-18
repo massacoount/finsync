@@ -51,10 +51,9 @@ class BudgetController {
   async createBudget(req, res) {
     const { category_id, amount, start_date, end_date } = req.body;
     try {
-      const budgetId = uuidv4();
       await this.db.query(
-        "INSERT INTO budget (budget_id, user_id, category_id, amount, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?)",
-        [budgetId, req.user.id, category_id, amount, start_date, end_date]
+        "INSERT INTO budget (user_id, category_id, amount, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?)",
+        [req.user.id, category_id, amount, start_date, end_date]
       );
       res.status(201).json({ id: budgetId, ...req.body });
     } catch (error) {

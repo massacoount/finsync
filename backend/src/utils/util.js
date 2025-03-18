@@ -1,8 +1,9 @@
+const { validationResult } = require("express-validator");
+
 class Util {
-    constructor() {
+    constructor(logger) {
       this.logger = logger;
     }
-  
     validateRequest() {
       return (req, res, next) => {
         const errors = validationResult(req);

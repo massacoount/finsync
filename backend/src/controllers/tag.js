@@ -41,10 +41,9 @@ class TagController {
   async createTag(req, res) {
     const { tag_name } = req.body;
     try {
-      const tagId = uuidv4();
       await this.db.query(
-        "INSERT INTO tag (tag_id, user_id, tag_name) VALUES (?, ?, ?)",
-        [tagId, req.user.id, tag_name]
+        "INSERT INTO tag (user_id, tag_name) VALUES (?, ?, ?)",
+        [req.user.id, tag_name]
       );
       res.status(201).json({ id: tagId, tag_name });
     } catch (error) {

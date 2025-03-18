@@ -69,12 +69,9 @@ class TransactionController {
     try {
       await connection.beginTransaction();
       this.logger.log("debug", "Transaction started");
-
-      const transactionId = uuidv4();
       await connection.query(
-        "INSERT INTO transaction (transaction_id, user_id, description, amount, from_account_id, to_account_id, category_id, tag_id, transaction_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO transaction (user_id, description, amount, from_account_id, to_account_id, category_id, tag_id, transaction_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
-          transactionId,
           req.user.id,
           description,
           amount,
