@@ -3,6 +3,8 @@ import mysql from 'mysql2/promise';
 export default class DatabaseService {
   constructor(logger) {
     this.logger = logger;
+    this.logger.debug('Initializing DatabaseService');
+    this.logger.info(process.env);
     this.pool = mysql.createPool({
       host: process.env.FINSYNC_DB_HOST,
       user: process.env.FINSYNC_DB_USER,
