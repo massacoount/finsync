@@ -1,39 +1,38 @@
-import winston from 'winston';
-import { format } from 'winston';
+import winston from "winston";
+import { format } from "winston";
 
 export default class LoggerService {
   constructor() {
     // Check if we are in production or not
-    this.isProduction = process.env.NODE_ENV === 'production';
+    this.isProduction = process.env.NODE_ENV === "production";
 
     // Define the log format based on the environment
     this.logFormat = this.isProduction
-      ? format.combine(
-          format.timestamp(),
-          format.json()
-        )
+      ? format.combine(format.timestamp(), format.json())
       : format.combine(
           format.colorize(),
           format.timestamp(),
           format.printf(({ timestamp, level, message, ...meta }) => {
-            return `${timestamp} [${level}]: ${message} ${Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''}`;
+            return `${timestamp} [${level}]: ${message} ${
+              Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ""
+            }`;
           })
         );
 
     // Create the logger
     this.logger = winston.createLogger({
-      level: 'debug', // Set log level to debug for development
+      level: "debug", // Set log level to debug for development
       format: this.logFormat,
       transports: [
         new winston.transports.Console(),
         new winston.transports.File({
-          filename: 'error.log',
-          level: 'error'
+          filename: process.env.ERROR_LOG_PATH || "error.log", // Default to "error.log" if ERROR_LOG_PATH is not set
+          level: "error", // Only log errors
         }),
         new winston.transports.File({
-          filename: 'combined.log'
-        })
-      ]
+          filename: process.env.INFO_LOG_PATH || "info.log",
+        }),
+      ],
     });
   }
 
