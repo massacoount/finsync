@@ -1,5 +1,6 @@
+const express = require("express");
 class AccountController {
-  constructor(logger, db, util) {
+  constructor(logger, dbService, util) {
     this.logger = logger;
     this.db = dbService;
     this.util = util;
@@ -43,7 +44,7 @@ class AccountController {
       );
       res.json(accounts);
     } catch (error) {
-      this.logger.log("error", "Error fetching accounts:", error);
+      this.logger.error("Error fetching accounts:", error);
       res.status(500).json({ error: "Failed to fetch accounts" });
     }
   }
@@ -64,7 +65,7 @@ class AccountController {
       );
       res.status(201).json({ id: accountId, ...req.body });
     } catch (error) {
-      this.logger.log("error", "Error creating account:", error);
+      this.logger.error("Error creating account:", error);
       res.status(400).json({ error: "Failed to create account" });
     }
   }
@@ -81,7 +82,7 @@ class AccountController {
         res.status(404).json({ error: "Account not found" });
       }
     } catch (error) {
-      this.logger.log("error", "Error fetching account:", error);
+      this.logger.error("Error fetching account:", error);
       res.status(500).json({ error: "Failed to fetch account" });
     }
   }
@@ -95,7 +96,7 @@ class AccountController {
       );
       res.json({ id: req.params.id, ...req.body });
     } catch (error) {
-      this.logger.log("error", "Error updating account:", error);
+      this.logger.error("Error updating account:", error);
       res.status(400).json({ error: "Failed to update account" });
     }
   }
@@ -108,7 +109,7 @@ class AccountController {
       );
       res.status(204).send();
     } catch (error) {
-      this.logger.log("error", "Error deleting account:", error);
+      this.logger.error("Error deleting account:", error);
       res.status(400).json({ error: "Failed to delete account" });
     }
   }

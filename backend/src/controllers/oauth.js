@@ -1,3 +1,5 @@
+const express = require("express");
+
 class AuthController {
   constructor(logger, dbService, util, oauthService) {
     this.logger = logger;

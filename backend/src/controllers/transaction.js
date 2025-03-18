@@ -1,3 +1,4 @@
+const express = require("express");
 class TransactionController {
   constructor(logger, dbService, util) {
     this.logger = logger;
@@ -43,7 +44,7 @@ class TransactionController {
       );
       res.json(transactions);
     } catch (error) {
-      this.logger.log("error", "Error fetching transactions:", error);
+      this.logger.error("Error fetching transactions:", error);
       res.status(500).json({ error: "Failed to fetch transactions" });
     }
   }
@@ -59,7 +60,7 @@ class TransactionController {
     } = req.body;
     const connection = await this.db.getConnection();
 
-    this.logger.log("info", "Starting new transaction", {
+    this.logger.info("Starting new transaction", {
       userId: req.user.id,
       fromAccount: from_account_id,
       toAccount: to_account_id,
@@ -68,7 +69,7 @@ class TransactionController {
 
     try {
       await connection.beginTransaction();
-      this.logger.log("debug", "Transaction started");
+      this.logger.debug("Transaction started");
       await connection.query(
         "INSERT INTO transaction (user_id, description, amount, from_account_id, to_account_id, category_id, tag_id, transaction_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
@@ -94,7 +95,7 @@ class TransactionController {
       );
 
       await connection.commit();
-      this.logger.log("info", "Transaction completed successfully", {
+      this.logger.info("Transaction completed successfully", {
         transactionId,
         amount,
         fromAccount: from_account_id,
@@ -103,7 +104,7 @@ class TransactionController {
       res.status(201).json({ id: transactionId, ...req.body });
     } catch (error) {
       await connection.rollback();
-      this.logger.log("error", "Transaction failed", {
+      this.logger.error("Transaction failed", {
         error,
         userId: req.user.id,
         fromAccount: from_account_id,
@@ -113,7 +114,7 @@ class TransactionController {
       res.status(400).json({ error: "Failed to create transaction" });
     } finally {
       connection.release();
-      this.logger.log("debug", "Database connection released");
+      this.logger.debug("Database connection released");
     }
   }
 
@@ -129,7 +130,7 @@ class TransactionController {
         res.status(404).json({ error: "Transaction not found" });
       }
     } catch (error) {
-      this.logger.log("error", "Error fetching transaction:", error);
+      this.logger.error("Error fetching transaction:", error);
       res.status(500).json({ error: "Failed to fetch transaction" });
     }
   }
@@ -145,7 +146,7 @@ class TransactionController {
       );
       res.json({ id: req.params.id, ...req.body });
     } catch (error) {
-      this.logger.log("error", "Error updating transaction:", error);
+      this.logger.error("Error updating transaction:", error);
       res.status(400).json({ error: "Failed to update transaction" });
     }
   }
@@ -160,7 +161,7 @@ class TransactionController {
       );
       res.status(204).send();
     } catch (error) {
-      this.logger.log("error", "Error deleting transaction:", error);
+      this.logger.error("Error deleting transaction:", error);
       res.status(400).json({ error: "Failed to delete transaction" });
     }
   }

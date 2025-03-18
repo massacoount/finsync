@@ -1,3 +1,4 @@
+const express = require("express");
 class TagController {
   constructor(logger, dbService, util) {
     this.logger = logger;
@@ -33,7 +34,7 @@ class TagController {
       ]);
       res.json(tags);
     } catch (error) {
-      this.logger.log("error", "Error fetching tags:", error);
+      this.logger.error("Error fetching tags:", error);
       res.status(500).json({ error: "Failed to fetch tags" });
     }
   }
@@ -47,7 +48,7 @@ class TagController {
       );
       res.status(201).json({ id: tagId, tag_name });
     } catch (error) {
-      this.logger.log("error", "Error creating tag:", error);
+      this.logger.error("Error creating tag:", error);
       res.status(400).json({ error: "Failed to create tag" });
     }
   }
@@ -61,7 +62,7 @@ class TagController {
       );
       res.json({ id: req.params.id, tag_name });
     } catch (error) {
-      this.logger.log("error", "Error updating tag:", error);
+      this.logger.error("Error updating tag:", error);
       res.status(400).json({ error: "Failed to update tag" });
     }
   }
@@ -74,7 +75,7 @@ class TagController {
       ]);
       res.status(204).send();
     } catch (error) {
-      this.logger.log("error", "Error deleting tag:", error);
+      this.logger.error("Error deleting tag:", error);
       res.status(400).json({ error: "Failed to delete tag" });
     }
   }

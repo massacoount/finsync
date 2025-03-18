@@ -5,7 +5,7 @@ const LoggerService = require("./services/logger.js");
 const DatabaseService = require("./services/database.js");
 const OAuthService = require("./services/oauth.js");
 const Util = require("./utils/util.js");
-const AuthController = require("./controllers/auth.js");
+const AuthController = require("./controllers/oauth.js");
 const AccountController = require("./controllers/account.js");
 const TransactionController = require("./controllers/transaction.js");
 const TagController = require("./controllers/tag.js");
@@ -27,21 +27,23 @@ class FinsyncApp {
       this.setupControllers();
       this.setupStaticFiles();
       this.setupErrorHandling();
-      this.logger.log("info", "Initializing Finsync application");
+      this.logger.info("Initializing Finsync application");
     } catch (err) {
-      this.logger.log("error", "Error initializing Finsync application", err);
+      this.logger.error("Error initializing Finsync application", err);
     }
   }
 
   setupMiddleware() {
-    this.logger.log("debug", "Setting up middleware");
+    this.logger.debug("Setting up middleware");
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({ extended: true }));
   }
 
   setupSwagger() {
-    this.logger.log("debug", "Setting up Swagger documentation");
-    const swaggerDocument = YAML.load(path.join(__dirname, "openapi.yaml"));
+    this.logger.debug("Setting up Swagger documentation");
+    const swaggerFilePath = path.resolve(__dirname, "../openapi.yaml");
+    this.logger.debug(`Loading Swagger documentation from ${swaggerFilePath}`);
+    const swaggerDocument = YAML.load(swaggerFilePath);
     this.app.use(
       "/api-docs",
       swaggerUi.serve,
@@ -50,7 +52,7 @@ class FinsyncApp {
   }
 
   setupControllers() {
-    this.logger.log("debug", "Setting up controllers");
+    this.logger.debug("Setting up controllers");
     const authController = new AuthController(
       this.logger,
       this.dbService,
@@ -117,7 +119,7 @@ class FinsyncApp {
     };
 
     this.app.use((err, req, res) => {
-      this.logger.log("error", "Unhandled error:", err);
+      this.logger.error("Unhandled error ", err);
       handleError(
         500,
         {
@@ -129,7 +131,7 @@ class FinsyncApp {
       );
     });
     this.app.use((req, res) => {
-      this.logger.log("error", "Not found error:", req.originalUrl);
+      this.logger.error("Not found error ", req.originalUrl);
       handleError(
         404,
         {
@@ -148,12 +150,12 @@ class FinsyncApp {
 
   start(port = 3000) {
     try {
-      this.logger.log("info", "Starting server", { port });
+      this.logger.info("Starting server", { port });
       return this.app.listen(port, () => {
-        this.logger.log("info", `Server running on port ${port}`);
+        this.logger.info(`Server running on port ${port}`);
       });
     } catch (err) {
-      this.logger.log("error", "Error starting server", err);
+      this.logger.error("Error starting server", err);
     }
   }
 }

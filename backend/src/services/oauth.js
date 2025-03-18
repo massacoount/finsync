@@ -1,3 +1,7 @@
+const crypto = require("crypto");
+const OAuth2Server = require("oauth2-server");
+const bcrypt = require("bcrypt");
+
 class OAuthService {
   constructor(logger, dbService) {
     this.logger = logger;
@@ -186,7 +190,7 @@ class OAuthService {
       const token = await this.oauth.token(request, response);
       res.json(token);
     } catch (err) {
-      this.logger.log("error", "Token error:", err);
+      this.logger.error("Token error:", err);
       res.status(err.code || 500).json(this.formatOAuthError(err));
     }
   }
@@ -201,7 +205,7 @@ class OAuthService {
         `${authParams.redirectUri}?code=${authParams.authorizationCode}`
       );
     } catch (err) {
-      this.logger.log("error", "Authorization error:", err);
+      this.logger.error("Authorization error:", err);
       res.status(err.code || 500).json(this.formatOAuthError(err));
     }
   }
@@ -227,7 +231,7 @@ class OAuthService {
         req.user = tokenData.user;
         next();
       } catch (err) {
-        this.logger.log("error", "Authentication error:", err);
+        this.logger.error("Authentication error:", err);
         res.status(401).json(this.formatOAuthError(err));
       }
     };

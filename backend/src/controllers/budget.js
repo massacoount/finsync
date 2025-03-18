@@ -1,3 +1,4 @@
+const express = require("express");
 class BudgetController {
   constructor(logger, dbService, util) {
     this.logger = logger;
@@ -43,7 +44,7 @@ class BudgetController {
       );
       res.json(budgets);
     } catch (error) {
-      this.logger.log("error", "Error fetching budgets:", error);
+      this.logger.error("Error fetching budgets:", error);
       res.status(500).json({ error: "Failed to fetch budgets" });
     }
   }
@@ -57,7 +58,7 @@ class BudgetController {
       );
       res.status(201).json({ id: budgetId, ...req.body });
     } catch (error) {
-      this.logger.log("error", "Error creating budget:", error);
+      this.logger.error("Error creating budget:", error);
       res.status(400).json({ error: "Failed to create budget" });
     }
   }
@@ -74,7 +75,7 @@ class BudgetController {
         res.status(404).json({ error: "Budget not found" });
       }
     } catch (error) {
-      this.logger.log("error", "Error fetching budget:", error);
+      this.logger.error("Error fetching budget:", error);
       res.status(500).json({ error: "Failed to fetch budget" });
     }
   }
@@ -88,7 +89,7 @@ class BudgetController {
       );
       res.json({ id: req.params.id, ...req.body });
     } catch (error) {
-      this.logger.log("error", "Error updating budget:", error);
+      this.logger.error("Error updating budget:", error);
       res.status(400).json({ error: "Failed to update budget" });
     }
   }
@@ -101,7 +102,7 @@ class BudgetController {
       );
       res.status(204).send();
     } catch (error) {
-      this.logger.log("error", "Error deleting budget:", error);
+      this.logger.error("Error deleting budget:", error);
       res.status(400).json({ error: "Failed to delete budget" });
     }
   }
