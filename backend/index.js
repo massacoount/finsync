@@ -927,7 +927,7 @@ class FinsyncApp {
 
   setupErrorHandling() {
     const handleError = (code, error, req, res) => {
-      const accept = req.headers["accept"] || "application/json";
+      const accept = req.headers && req.headers["accept"] ? req.headers["accept"] : "application/json";
       if (accept.includes("application/json")) {
         res.status(code).json(error);
       } else if (accept.includes("text/plain")) {
