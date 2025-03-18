@@ -4,7 +4,7 @@ export default class DatabaseService {
   constructor(logger) {
     this.logger = logger;
     this.logger.debug('Initializing DatabaseService');
-    this.logger.info(process.env);
+    this.logger.error("Config", process.env);
     this.pool = mysql.createPool({
       host: process.env.FINSYNC_DB_HOST,
       user: process.env.FINSYNC_DB_USER,
