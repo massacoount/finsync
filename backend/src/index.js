@@ -114,11 +114,17 @@ class FinsyncApp {
       } else if (accept.includes("text/plain")) {
         res.status(code).send(error.message);
       } else {
-        res.status(code).sendFile(`${__dirname}/public/${code}.html`);
+        const errorPagePath = path.resolve(__dirname, `../public/${code}.html`);
+        res.status(code).sendFile(errorPagePath, (err) => {
+          if (err) {
+            this.logger.error(`Error serving error page for code ${code}`, err);
+            res.status(code).send(error.message);
+          }
+        });
       }
     };
 
-    this.app.use((err, req, res) => {
+    this.app.use((err, req, res, _next) => {
       this.logger.error("Unhandled error ", err);
       handleError(
         500,
@@ -130,8 +136,8 @@ class FinsyncApp {
         res
       );
     });
-    this.app.use((req, res) => {
-      this.logger.error("Not found error ", req.originalUrl);
+    this.app.use((req, res, _next) => {
+      this.logger.error(`Not found error requested URL ${req.originalUrl}`);
       handleError(
         404,
         {
