@@ -1,44 +1,36 @@
-const mysql = require("mysql");
+import mysql from 'mysql2/promise';
 
-class DatabaseService {
+export default class DatabaseService {
   constructor(logger) {
     this.logger = logger;
-    this.connection = mysql.createConnection({
-      host: process.env.DB_HOST,
-      port: process.env.DB_PORT,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
+    this.pool = mysql.createPool({
+      host: process.env.FINSYNC_DB_HOST,
+      user: process.env.FINSYNC_DB_USER,
+      password: process.env.FINSYNC_DB_PASSWORD,
+      database: process.env.FINSYNC_DB_NAME,
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0
     });
   }
 
-  query(sql, params) {
-    return new Promise((resolve, reject) => {
-      this.connection.query(sql, params, (error, results) => {
-        if (error) {
-          this.logger.error("Database query error:", error);
-          reject(error);
-        } else {
-          this.logger.info("Query successful:", sql);
-          resolve(results);
-        }
-      });
-    });
+  async query(sql, params) {
+    try {
+      const [results] = await this.pool.execute(sql, params);
+      return results;
+    } catch (error) {
+      this.logger.error('Database query error:', { sql, error: error.message });
+      throw error;
+    }
   }
 
-  getConnection() {
-    return new Promise((resolve, reject) => {
-      this.connection.connect((err) => {
-        if (err) {
-          this.logger.error("Database connection error:", err);
-          reject(err);
-        } else {
-          this.logger.info("Connected to the database!");
-          resolve(this.connection);
-        }
-      });
-    });
+  async getConnection() {
+    try {
+      const connection = await this.pool.getConnection();
+      return connection;
+    } catch (error) {
+      this.logger.error('Database connection error:', error);
+      throw error;
+    }
   }
 }
-
-module.exports = DatabaseService;

@@ -1,8 +1,8 @@
-const crypto = require("crypto");
-const OAuth2Server = require("oauth2-server");
-const bcrypt = require("bcrypt");
+import crypto from "crypto";
+import OAuth2Server from "oauth2-server";
+import bcrypt from "bcrypt";
 
-class OAuthService {
+export default class OAuthService {
   constructor(logger, dbService) {
     this.logger = logger;
     this.db = dbService;
@@ -237,4 +237,3 @@ class OAuthService {
     };
   }
 }
-module.exports = OAuthService;

@@ -1,5 +1,5 @@
-const express = require("express");
-class TransactionController {
+import express from "express";
+export default class TransactionController {
   constructor(logger, dbService, util) {
     this.logger = logger;
     this.db = dbService;
@@ -166,4 +166,3 @@ class TransactionController {
     }
   }
 }
-module.exports = TransactionController;

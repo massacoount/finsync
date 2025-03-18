@@ -1,5 +1,6 @@
-const express = require("express");
-class TagController {
+import express from "express";
+
+export default class TagController {
   constructor(logger, dbService, util) {
     this.logger = logger;
     this.db = dbService;
@@ -80,4 +81,3 @@ class TagController {
     }
   }
 }
-module.exports = TagController;

@@ -1,6 +1,7 @@
-const express = require("express");
+import express from "express";
 
-class AuthController {
+
+export default class OauthController {
   constructor(logger, dbService, util, oauthService) {
     this.logger = logger;
     this.db = dbService;
@@ -41,5 +42,3 @@ class AuthController {
     });
   }
 }
-
-module.exports = AuthController;

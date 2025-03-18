@@ -1,6 +1,6 @@
-const { validationResult } = require("express-validator");
+import {validationResult} from "express-validator";
 
-class Util {
+export default class Util {
   constructor(logger) {
     this.logger = logger;
   }
@@ -15,4 +15,3 @@ class Util {
     };
   }
 }
-module.exports = Util;

@@ -1,5 +1,6 @@
-const express = require("express");
-class BudgetController {
+import express from "express";
+
+export default class BudgetController {
   constructor(logger, dbService, util) {
     this.logger = logger;
     this.db = dbService;
@@ -107,5 +108,3 @@ class BudgetController {
     }
   }
 }
-
-module.exports = BudgetController;

@@ -1,35 +1,40 @@
-require("dotenv").config();
-const express = require("express");
-const bodyParser = require("body-parser");
-const LoggerService = require("./services/logger.js");
-const DatabaseService = require("./services/database.js");
-const OAuthService = require("./services/oauth.js");
-const Util = require("./utils/util.js");
-const AuthController = require("./controllers/oauth.js");
-const AccountController = require("./controllers/account.js");
-const TransactionController = require("./controllers/transaction.js");
-const TagController = require("./controllers/tag.js");
-const BudgetController = require("./controllers/budget.js");
-const swaggerUi = require("swagger-ui-express");
-const YAML = require("yamljs");
-const path = require("path");
+import "dotenv/config";
+import express from "express";
+import bodyParser from "body-parser";
+import LoggerService from "./services/logger.js";
+import DatabaseService from "./services/database.js";
+import OAuthService from "./services/oauth.js";
+import Util from "./utils/util.js";
+import OauthController from "./controllers/account.js";
+import AccountController from "./controllers/account.js";
+import TransactionController from "./controllers/transaction.js";
+import TagController from "./controllers/tag.js";
+import BudgetController from "./controllers/budget.js";
+import swaggerUi from "swagger-ui-express";
+import YAML from "yamljs";
+import path from "path";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class FinsyncApp {
   constructor() {
+    this.app = express();
+    this.logger = new LoggerService();
+
     try {
-      this.app = express();
-      this.logger = new LoggerService();
       this.dbService = new DatabaseService(this.logger);
       this.oauthService = new OAuthService(this.logger, this.dbService);
       this.util = new Util(this.logger);
       this.setupMiddleware();
-      this.setupSwagger();
       this.setupControllers();
+      this.setupSwagger();
       this.setupStaticFiles();
       this.setupErrorHandling();
-      this.logger.info("Initializing Finsync application");
+      this.logger.info("Finsync application initialized successfully");
     } catch (err) {
-      this.logger.error("Error initializing Finsync application", err);
+      this.logger.error("Error initializing Finsync application:", err);
+      process.exit(1);
     }
   }
 
@@ -38,7 +43,6 @@ class FinsyncApp {
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({ extended: true }));
   }
-
   setupSwagger() {
     this.logger.debug("Setting up Swagger documentation");
     const swaggerFilePath = path.resolve(__dirname, "../openapi.yaml");
@@ -53,7 +57,7 @@ class FinsyncApp {
 
   setupControllers() {
     this.logger.debug("Setting up controllers");
-    const authController = new AuthController(
+    const oauthController = new OauthController(
       this.logger,
       this.dbService,
       this.util,
@@ -80,7 +84,7 @@ class FinsyncApp {
       this.util
     );
 
-    this.app.use("/auth", authController.router);
+    this.app.use("/auth", oauthController.router);
     this.app.use(
       "/accounts",
       //this.oauthService.authenticateRequest(),
@@ -104,68 +108,50 @@ class FinsyncApp {
   }
 
   setupErrorHandling() {
-    const handleError = (code, error, req, res) => {
-      const accept =
-        req.headers && req.headers["accept"]
-          ? req.headers["accept"]
-          : "application/json";
-      if (accept.includes("application/json")) {
-        res.status(code).json(error);
-      } else if (accept.includes("text/plain")) {
-        res.status(code).send(error.message);
-      } else {
-        const errorPagePath = path.resolve(__dirname, `../public/${code}.html`);
-        res.status(code).sendFile(errorPagePath, (err) => {
-          if (err) {
-            this.logger.error(`Error serving error page for code ${code}`, err);
-            res.status(code).send(error.message);
-          }
-        });
-      }
-    };
-
-    this.app.use((req, res, _next) => {
-      this.logger.error("Unhandled error ", { url: req.originalUrl });
-      handleError(
-        500,
-        {
-          error: "Internal Server Error",
-          message: "An unexpected error occurred",
-        },
-        req,
-        res
-      );
+    this.app.use((req, res, next) => {
+      const error = new Error("Not Found");
+      error.status = 404;
+      next(error);
     });
-    this.app.use((req, res, _next) => {
-      this.logger.error(`Not found error requested URL ${req.originalUrl}`);
-      handleError(
-        404,
-        {
-          error: "Not Found",
-          message: "The requested resource was not found",
-        },
-        req,
-        res
-      );
+    // Error handler
+    this.app.use((err, req, res, next) => {
+      this.logger.error("Application error:", err);
+      const statusCode = err.status || 500;
+      const error = statusCode === 404 ? "Not Found" : "Internal Server Error";
+      const message =
+        statusCode === 404
+          ? "The requested resource was not found"
+          : "An unexpected error occurred";
+      const errorResponse = {
+        error,
+        message,
+      };
+      if (process.env.NODE_ENV !== "production") {
+        errorResponse.stack = error.stack;
+      }
+      res.status(statusCode).json(errorResponse);
     });
   }
 
   setupStaticFiles() {
-    this.app.use(express.static("public"));
+    this.app.use(express.static(path.join(__dirname, "../public")));
   }
 
-  start(port = 3000) {
+  async start(port = 3000) {
     try {
-      this.logger.info("Starting server", { port });
-      return this.app.listen(port, () => {
+      await this.dbService.getConnection();
+      this.logger.info("Database connection established");
+      this.app.listen(port, () => {
         this.logger.info(`Server running on port ${port}`);
       });
     } catch (err) {
-      this.logger.error("Error starting server", err);
+      this.logger.error("Failed to start server:", err);
+      process.exit(1);
     }
   }
 }
 
-// Usage
 const app = new FinsyncApp();
-app.start(process.env.PORT || 3000);
+app.start(process.env.FINSYNC_PORT || 3000);
+
+export default app;
