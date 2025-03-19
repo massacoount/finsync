@@ -1,5 +1,5 @@
-import dotenv from 'dotenv';
-dotenv.config()
+import dotenv from "dotenv";
+dotenv.config();
 import express from "express";
 import bodyParser from "body-parser";
 import LoggerService from "./services/logger.js";
@@ -109,33 +109,59 @@ class FinsyncApp {
   }
 
   setupErrorHandling() {
-    this.app.use((req, res, next) => {
-      const error = new Error("Not Found");
-      error.status = 404;
-      next(error);
-    });
-    // Error handler
-    this.app.use((err, req, res, next) => {
-      this.logger.error("Application error:", err);
-      const statusCode = err.status || 500;
-      const error = statusCode === 404 ? "Not Found" : "Internal Server Error";
-      const message =
-        statusCode === 404
-          ? "The requested resource was not found"
-          : "An unexpected error occurred";
-      const errorResponse = {
-        error,
-        message,
-      };
-      if (process.env.NODE_ENV !== "production") {
-        errorResponse.stack = error.stack;
+    const handleError = (code, error, req, res) => {
+      const accept =
+        req.headers && req.headers["accept"]
+          ? req.headers["accept"]
+          : "application/json";
+
+      if (accept.includes("application/json")) {
+        res.status(code).json(error);
+      } else if (accept.includes("text/plain")) {
+        res.status(code).send(error.message);
+      } else {
+        const errorPagePath = path.resolve(__dirname, `../public/${code}.html`);
+
+        res.status(code).sendFile(errorPagePath, (err) => {
+          if (err) {
+            this.logger.error(`Error serving error page for code ${code}`, err);
+
+            res.status(code).send(error.message);
+          }
+        });
       }
-      res.status(statusCode).json(errorResponse);
+    };
+    this.app.use((req, res, _next) => {
+      this.logger.error("Unhandled error ", { url: req.originalUrl });
+      handleError(
+        500,
+        {
+          error: "Internal Server Error",
+          message: "An unexpected error occurred",
+        },
+        req,
+        res
+      );
+    });
+    this.app.use((req, res, _next) => {
+      this.logger.error(`Not found error requested URL ${req.originalUrl}`);
+      handleError(
+        404,
+        {
+          error: "Not Found",
+          message: "The requested resource was not found",
+        },
+        req,
+        res
+      );
     });
   }
 
   setupStaticFiles() {
     this.app.use(express.static(path.join(__dirname, "../public")));
+    this.app.get('/', (req, res) => {
+      res.sendFile(path.join(__dirname, '../public/index.html'));
+    });
   }
 
   async start(port = 3000) {
