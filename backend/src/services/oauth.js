@@ -15,16 +15,31 @@ export default class OAuthService {
   }
 
   async getClient(clientId, clientSecret) {
-    const [client] = await this.db.query(
-      "SELECT * FROM oauth_client WHERE client_id = ? AND client_secret = ?",
-      [clientId, clientSecret]
-    );
-    if (!client) return null;
-    return {
-      id: client.client_id,
-      grants: JSON.parse(client.allowed_grants),
-      redirectUris: [client.redirect_uri],
-    };
+    try {
+      const [client] = await this.db.query(
+        "SELECT * FROM oauth_client WHERE client_id = ? AND client_secret = ?",
+        [clientId, clientSecret]
+      );
+      
+      if (!client) {
+        this.logger.error('Client not found:', { clientId });
+        return null;
+      }
+  
+      // Ensure allowed_grants has a default value if undefined
+      const grants = client.allowed_grants 
+        ? JSON.parse(client.allowed_grants) 
+        : ['password'];
+  
+      return {
+        id: client.client_id,
+        grants,
+        redirectUris: [client.redirect_uri || ''],
+      };
+    } catch (error) {
+      this.logger.error('Error in getClient:', error);
+      throw error;
+    }
   }
 
   async getUser(username, password) {

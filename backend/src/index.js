@@ -6,7 +6,7 @@ import LoggerService from "./services/logger.js";
 import DatabaseService from "./services/database.js";
 import OAuthService from "./services/oauth.js";
 import Util from "./utils/util.js";
-import OauthController from "./controllers/account.js";
+import OauthController from "./controllers/oauth.js";
 import AccountController from "./controllers/account.js";
 import TransactionController from "./controllers/transaction.js";
 import TagController from "./controllers/tag.js";
@@ -88,7 +88,7 @@ class FinsyncApp {
     this.app.use("/auth", oauthController.router);
     this.app.use(
       "/accounts",
-      //this.oauthService.authenticateRequest(),
+      this.oauthService.authenticateRequest(),
       accountController.router
     );
     this.app.use(
