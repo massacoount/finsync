@@ -3,14 +3,12 @@ import { format } from "winston";
 
 export default class LoggerService {
   constructor() {
-    // Define the log format based on the environment
-    // Create the logger
     this.logger = winston.createLogger({
-      level: "debug", // Set log level to debug for development
+      level: "debug",
       format: format.combine(format.timestamp(), format.json()),
       transports: [
         new winston.transports.File({
-          filename: process.env.ERROR_LOG_PATH || "error.log", // Default to "error.log" if ERROR_LOG_PATH is not set
+          filename: process.env.ERROR_LOG_PATH || "error.log",
           level: "error",
         }),
         new winston.transports.File({

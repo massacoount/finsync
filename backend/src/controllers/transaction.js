@@ -83,8 +83,6 @@ export default class TransactionController {
           new Date(),
         ]
       );
-
-      // Update account balances
       await connection.query(
         "UPDATE account SET current_balance = current_balance - ? WHERE account_id = ?",
         [amount, from_account_id]
