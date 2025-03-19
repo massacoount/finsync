@@ -33,7 +33,6 @@ jobs:
           source: "frontend/dist/*"
           target: "${{ secrets.W1_FE_DEPLOY_PATH }}"
           strip_components: 2
-
       - name: Deploy Backend
         uses: appleboy/ssh-action@v0.1.4
         with:
@@ -47,4 +46,6 @@ jobs:
             cd backend
             npm install
             touch ./tmp/restart.txt
+            cd ../frontend
+            cp .env ${{ secrets.W1_FE_DEPLOY_PATH }}
             echo "Deployment successful!"
