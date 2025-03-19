@@ -23,7 +23,18 @@ jobs:
         working-directory: ./frontend
         run: npm run build
 
-      - name: Deploy to W1
+      - name: Deploy to Frontend
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.W1_HOST }}
+          port: ${{ secrets.W1_PORT }}
+          username: ${{ secrets.W1_USERNAME }}
+          password: ${{ secrets.W1_PASSWORD }}
+          source: "frontend/dist/*"
+          target: "${{ secrets.W1_FE_DEPLOY_PATH }}"
+          strip_components: 2
+
+      - name: Deploy Backend
         uses: appleboy/ssh-action@v0.1.4
         with:
           host: ${{ secrets.W1_HOST }}
@@ -36,7 +47,4 @@ jobs:
             cd backend
             npm install
             touch ./tmp/restart.txt
-            cd ../frontend
-            rm -rf ${{secrets.W1_FE_DEPLOY_PATH}}/*
-            cp -r dist/* ${{secrets.W1_FE_DEPLOY_PATH}}
             echo "Deployment successful!"
