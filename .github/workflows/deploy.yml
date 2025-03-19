@@ -7,6 +7,22 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
       - name: Deploy to W1
         uses: appleboy/ssh-action@v0.1.4
         with:
@@ -15,13 +31,12 @@ jobs:
           username: ${{ secrets.W1_USERNAME }}
           password: ${{ secrets.W1_PASSWORD }}
           script: |
-            source ${{secrets.SOURCE_PATH}} &&  cd ${{ secrets.W1_PATH }}
+            source ${{secrets.SOURCE_PATH}} && cd ${{ secrets.W1_PATH }}
             git pull
             cd backend
             npm install
             touch ./tmp/restart.txt
             cd ../frontend
-            npm install
-            npm run build
+            rm -rf ${{secrets.W1_FE_DEPLOY_PATH}}/*
             cp -r dist/* ${{secrets.W1_FE_DEPLOY_PATH}}
             echo "Deployment successful!"
