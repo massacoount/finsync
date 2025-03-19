@@ -1,15 +1,12 @@
 import { Client, Databases, Storage, ID, Query } from "appwrite";
 import { BaseFinanceService } from "./BaseFinanceService";
+import { appwriteConfig } from "@/config/appwrite";
 
 const client = new Client();
-const {
-  VITE_APPWRITE_ENDPOINT,
-  VITE_APPWRITE_PROJECT_ID,
-} = import.meta.env;
 
 client
-  .setEndpoint(VITE_APPWRITE_ENDPOINT) // Your Appwrite Endpoint
-  .setProject(VITE_APPWRITE_PROJECT_ID); // Your project ID
+  .setEndpoint(appwriteConfig.endpoint)
+  .setProject(appwriteConfig.projectId);
 
 const databases = new Databases(client);
 const storage = new Storage(client);
@@ -24,7 +21,7 @@ export class AppwriteFinanceService extends BaseFinanceService {
     const transactions = await databases.listDocuments(
       DATABASE_ID,
       TRANSACTIONS_COLLECTION_ID,
-      [Query.orderDesc("date"), Query.limit(limit), Query.offset(offset)],
+      [Query.orderDesc("date"), Query.limit(limit), Query.offset(offset)]
     );
     return transactions.documents;
   }
@@ -40,7 +37,7 @@ export class AppwriteFinanceService extends BaseFinanceService {
       DATABASE_ID,
       TRANSACTIONS_COLLECTION_ID,
       ID.unique(),
-      transactionData,
+      transactionData
     );
     return addTransactionResponse;
   }
@@ -60,7 +57,7 @@ export class AppwriteFinanceService extends BaseFinanceService {
       DATABASE_ID,
       TRANSACTIONS_COLLECTION_ID,
       transactionId,
-      transactionData,
+      transactionData
     );
     return editTransactionResponse;
   }
@@ -69,7 +66,7 @@ export class AppwriteFinanceService extends BaseFinanceService {
     await databases.deleteDocument(
       DATABASE_ID,
       TRANSACTIONS_COLLECTION_ID,
-      transactionId,
+      transactionId
     );
   }
 
@@ -82,7 +79,7 @@ export class AppwriteFinanceService extends BaseFinanceService {
       DATABASE_ID,
       ACCOUNTS_COLLECTION_ID,
       ID.unique(),
-      budgetData,
+      budgetData
     );
     return response;
   }
@@ -91,7 +88,7 @@ export class AppwriteFinanceService extends BaseFinanceService {
     const response = await storage.createFile(
       BANK_STATEMENTS_BUCKET_ID,
       ID.unique(),
-      file,
+      file
     );
     return response;
   }

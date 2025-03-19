@@ -1,15 +1,12 @@
 import { BaseAuth } from './BaseAuth';
 import { Client, Account } from 'appwrite';
+import { appwriteConfig } from '@/config/appwrite';
 
 const client = new Client();
-const {
-  VITE_APPWRITE_ENDPOINT,
-  VITE_APPWRITE_PROJECT_ID,
-} = import.meta.env;
 
 client
-  .setEndpoint(VITE_APPWRITE_ENDPOINT) // Your Appwrite Endpoint
-  .setProject(VITE_APPWRITE_PROJECT_ID); // Your project ID
+  .setEndpoint(appwriteConfig.endpoint) // Your Appwrite Endpoint
+  .setProject(appwriteConfig.projectId); // Your project ID
 
 const account = new Account(client);
 
