@@ -132,24 +132,24 @@ class FinsyncApp {
       }
     };
     this.app.use((req, res, _next) => {
-      this.logger.error("Unhandled error ", { url: req.originalUrl });
-      handleError(
-        500,
-        {
-          error: "Internal Server Error",
-          message: "An unexpected error occurred",
-        },
-        req,
-        res
-      );
-    });
-    this.app.use((req, res, _next) => {
       this.logger.error(`Not found error requested URL ${req.originalUrl}`);
       handleError(
         404,
         {
           error: "Not Found",
           message: "The requested resource was not found",
+        },
+        req,
+        res
+      );
+    });
+    this.app.use((err, req, res, _next) => {
+      this.logger.error("Unhandled error ", { url: req.originalUrl });
+      handleError(
+        err.status || 500,
+        {
+          error: "Internal Server Error",
+          message: "An unexpected error occurred",
         },
         req,
         res
