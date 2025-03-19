@@ -7,6 +7,7 @@ export default class DatabaseService {
     this.logger.error("Config", process.env);
     this.pool = mysql.createPool({
       host: process.env.FINSYNC_DB_HOST,
+      port: process.env.FINSYNC_DB_PORT,
       user: process.env.FINSYNC_DB_USER,
       password: process.env.FINSYNC_DB_PASSWORD,
       database: process.env.FINSYNC_DB_NAME,
