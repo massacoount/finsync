@@ -15,14 +15,13 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Clean npm cache and reinstall dependencies
+      - name: Install frontend dependencies
         working-directory: ./frontend
-        run: |
-          npm ci
-
+        run: npm install
+  
       - name: Build frontend
         working-directory: ./frontend
-        run: npm run build
+        run: npm run build-only
 
       - name: Upload frontend Build Artifacts
         uses: appleboy/scp-action@master
