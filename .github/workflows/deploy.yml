@@ -15,9 +15,11 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install frontend dependencies
+      - name: Clean npm cache and reinstall
         working-directory: ./frontend
-        run: npm install
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
 
       - name: Build frontend
         working-directory: ./frontend
@@ -33,6 +35,7 @@ jobs:
           source: "frontend/dist/*"
           target: "${{ secrets.W1_FE_DEPLOY_PATH }}"
           strip_components: 2
+
       - name: Setup Application
         uses: appleboy/ssh-action@v0.1.4
         with:
