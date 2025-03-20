@@ -51,6 +51,8 @@ export default {
 
     const handleLogin = async () => {
       try {
+        console.log('Logging in with:', email.value
+        , password.value);
         await login(email.value, password.value);
         // Redirect to dashboard or another page after successful login
         router.push('/');

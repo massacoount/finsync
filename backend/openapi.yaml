@@ -108,7 +108,7 @@ security:
   - bearerAuth: []
 
 paths:
-  /auth/authorize:
+  /api/auth/authorize:
     get:
       summary: 'Authorize'
       description: 'Authorize a user'
@@ -119,7 +119,7 @@ paths:
           description: 'Invalid request'
         '500':
           description: 'Internal server error'
-  /auth/token:
+  /api/auth/token:
     post:
       summary: 'Token'
       description: 'Get an access token'
@@ -171,7 +171,7 @@ paths:
           description: 'Invalid client or user credentials'
         '500':
           description: 'Internal server error'
-  /auth/userinfo:
+  /api/auth/userinfo:
     get:
       summary: 'User Info'
       description: 'Get user information'
@@ -195,7 +195,7 @@ paths:
           description: 'Unauthorized'
         '500':
           description: 'Internal server error'
-  /accounts:
+  /api/accounts:
     get:
       summary: List all accounts
       responses:
@@ -218,8 +218,7 @@ paths:
       responses:
         '201':
           description: Account created
-
-  /accounts/{accountId}:
+  /api/accounts/{accountId}:
     get:
       summary: Get a specific account
       parameters:
@@ -263,8 +262,7 @@ paths:
       responses:
         '204':
           description: Account deleted
-
-  /transactions:
+  /api/transactions:
     get:
       summary: List all transactions
       responses:
@@ -287,8 +285,7 @@ paths:
       responses:
         '201':
           description: Transaction created
-
-  /transactions/{transactionId}:
+  /api/transactions/{transactionId}:
     get:
       summary: Get a specific transaction
       parameters:
@@ -332,8 +329,7 @@ paths:
       responses:
         '204':
           description: Transaction deleted
-
-  /tags:
+  /api/tags:
     get:
       summary: List all tags
       responses:
@@ -356,8 +352,7 @@ paths:
       responses:
         '201':
           description: Tag created
-
-  /tags/{tagId}:
+  /api/tags/{tagId}:
     put:
       summary: Update a tag
       parameters:
@@ -386,8 +381,7 @@ paths:
       responses:
         '204':
           description: Tag deleted
-
-  /budgets:
+  /api/budgets:
     get:
       summary: List all budgets
       responses:
@@ -410,8 +404,7 @@ paths:
       responses:
         '201':
           description: Budget created
-
-  /budgets/{budgetId}:
+  /api/budgets/{budgetId}:
     get:
       summary: Get a specific budget
       parameters:

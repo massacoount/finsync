@@ -1,11 +1,10 @@
+import { apiConfig } from "@/config/api";
 import { BaseAuth } from "./BaseAuth";
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.BASE_URL || '';
-
 export class DefaultAuth extends BaseAuth {
     login(email: string, password: string): Promise<any> {
-        return axios.post(`${BASE_URL}/auth/token`, { email, password })
+        return axios.post(`${apiConfig.baseUrl}/auth/token`, { email, password })
             .then(response => response.data)
             .catch(error => {
                 throw new Error(error.response?.data?.message || 'Login failed');
@@ -13,7 +12,7 @@ export class DefaultAuth extends BaseAuth {
     }
 
     register(email: string, password: string): Promise<any> {
-        return axios.post(`${BASE_URL}/api/register`, { email, password })
+        return axios.post(`${apiConfig.baseUrl}/api/register`, { email, password })
             .then(response => response.data)
             .catch(error => {
                 throw new Error(error.response?.data?.message || 'Registration failed');
@@ -21,7 +20,7 @@ export class DefaultAuth extends BaseAuth {
     }
     
     getUser(): Promise<any> {
-        return axios.get(`${BASE_URL}/api/user`)
+        return axios.get(`${apiConfig.baseUrl}/api/user`)
             .then(response => response.data)
             .catch(error => {
                 throw new Error(error.response?.data?.message || 'Failed to get user');
@@ -29,7 +28,7 @@ export class DefaultAuth extends BaseAuth {
     }
 
     logout(): Promise<void> {
-        return axios.post(`${BASE_URL}/api/logout`)
+        return axios.post(`${apiConfig.baseUrl}/api/logout`)
             .then(() => {})
             .catch(error => {
                 throw new Error(error.response?.data?.message || 'Logout failed');

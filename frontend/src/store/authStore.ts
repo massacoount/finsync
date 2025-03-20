@@ -9,6 +9,7 @@ export const useAuthStore = defineStore("auth", () => {
 
   const login = async (email: string, password: string) => {
     try {
+      console.log("AuthService:", authService);
       await authService.login(email, password);
       user.value = await authService.getUser();
     } catch (error) {

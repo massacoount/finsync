@@ -85,24 +85,24 @@ class FinsyncApp {
       this.util
     );
 
-    this.app.use("/auth", oauthController.router);
+    this.app.use("/api/auth", oauthController.router);
     this.app.use(
-      "/accounts",
+      "/api/accounts",
       this.oauthService.authenticateRequest(),
       accountController.router
     );
     this.app.use(
-      "/transactions",
+      "/api/transactions",
       this.oauthService.authenticateRequest(),
       transactionController.router
     );
     this.app.use(
-      "/tags",
+      "/api/tags",
       this.oauthService.authenticateRequest(),
       tagController.router
     );
     this.app.use(
-      "/budgets",
+      "/api/budgets",
       this.oauthService.authenticateRequest(),
       budgetController.router
     );
