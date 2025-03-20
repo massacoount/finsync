@@ -15,11 +15,10 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Clean npm cache and reinstall
+      - name: Clean npm cache and reinstall dependencies
         working-directory: ./frontend
         run: |
-          rm -rf node_modules package-lock.json
-          npm install
+          npm ci
 
       - name: Build frontend
         working-directory: ./frontend
