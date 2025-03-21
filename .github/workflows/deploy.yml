@@ -9,10 +9,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Removing lock file
-        working-directory: ./frontend
-        run: |
-          rm -rf package-lock.json
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
@@ -20,10 +16,10 @@ jobs:
       - name: Installing dependencies
         working-directory: ./frontend
         run: |
-          npm install
+          yarn install
       - name: Build frontend
         working-directory: ./frontend
-        run: npm run build
+        run: yarn run build
       - name: Upload frontend Build Artifacts
         uses: appleboy/scp-action@master
         with:
