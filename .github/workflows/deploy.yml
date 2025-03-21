@@ -9,14 +9,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Removing lock file
+        working-directory: ./frontend
+        run: |
+          rm -rf package-lock.json
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "22"
-      - name: Clean npm cache and reinstall
+      - name: Installing dependencies
         working-directory: ./frontend
         run: |
-          rm -rf node_modules package-lock.json
           npm install
       - name: Build frontend
         working-directory: ./frontend
