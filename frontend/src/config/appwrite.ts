@@ -1,6 +1,6 @@
 export const appwriteConfig = {
-  endpoint: import.meta.env.VITE_APPWRITE_ENDPOINT || 'http://localhost:80/v1',
-  projectId: import.meta.env.VITE_APPWRITE_PROJECT_ID || 'default',
+  endpoint: import.meta.env.VITE_APPWRITE_ENDPOINT,
+  projectId: import.meta.env.VITE_APPWRITE_PROJECT_ID,
   databaseId: 'finsync',
   collections: {
     transactions: 'transactions',

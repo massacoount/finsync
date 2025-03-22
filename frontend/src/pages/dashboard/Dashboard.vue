@@ -6,7 +6,7 @@
         <input
           type="text"
           placeholder="Search by Name, Number or Transaction ID"
-          class="w-full p-2 pl-10 pr-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300"
+          class="w-full p-2 pl-10 pr-4 shadow focus:outline-none focus:ring-2 focus:ring-gray-300"
         />
         <span class="absolute left-3 top-3 text-gray-400">🔍</span>
       </div>
@@ -56,99 +56,82 @@
   </div>
 </template>
 
-<script>
-import { onMounted, ref, watch } from "vue";
+<<script setup lang="ts">
+import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { useAuth } from "@/composables/useAuth";
 import { useFinance } from "@/composables/useFinance";
 import FloatingActionButton from "@/components/common/FloatingActionButton.vue";
+import type { Transaction } from "@/types/finance";
 
-export default {
-  components: {
-    FloatingActionButton,
-  },
-  setup() {
-    const router = useRouter();
-    const { user, checkAuth } = useAuth();
-    const { transactions, fetchTransactions, loadMoreTransactions, deleteTransaction, hasMore } = useFinance();
-    const loadMoreTrigger = ref(null);
-    const touchStartX = ref(0);
-    const touchEndX = ref(0);
-    const currentTransaction = ref(null);
+const router = useRouter();
+const { transactions, fetchTransactions, loadMoreTransactions, deleteTransaction, hasMore } = useFinance();
 
-    const startTouch = (event, transaction) => {
-      touchStartX.value = event.changedTouches[0].screenX;
-      currentTransaction.value = transaction;
-    };
+const loadMoreTrigger = ref<HTMLElement | null>(null);
+const touchStartX = ref(0);
+const touchEndX = ref(0);
+const currentTransaction = ref<Transaction | null>(null);
 
-    const moveTouch = (event) => {
-      touchEndX.value = event.changedTouches[0].screenX;
-    };
-
-    const endTouch = () => {
-      if (touchStartX.value - touchEndX.value > 50) {
-        // Swipe left - Edit
-        handleSwipeLeft(currentTransaction.value);
-      } else if (touchEndX.value - touchStartX.value > 50) {
-        // Swipe right - Delete
-        handleSwipeRight(currentTransaction.value);
-      }
-    };
-
-    const handleSwipeLeft = (transaction) => {
-      // Redirect to edit form
-      router.push(`/edit-transaction/${transaction.id}`);
-    };
-
-    const handleSwipeRight = (transaction) => {
-      // Show confirmation dialog for deletion
-      if (confirm("Are you sure you want to delete this transaction?")) {
-        deleteTransaction(transaction.id);
-      }
-    };
-
-    const handleFabAction = (action) => {
-      if (action === "addTransaction") {
-        router.push("/add-transaction");
-      } else if (action === "manageAccounts") {
-        router.push("/accounts");
-      }
-    };
-
-    onMounted(async () => {
-      const authResponse = await checkAuth();
-      if (authResponse) {
-        await fetchTransactions();
-      } else {
-        console.error("User is not authenticated");
-      }
-    });
-
-    const observer = new IntersectionObserver(
-      async (entries) => {
-        if (entries[0].isIntersecting && hasMore.value) {
-          await loadMoreTransactions();
-        }
-      },
-      { threshold: 1.0 }
-    );
-
-    onMounted(() => {
-      if (loadMoreTrigger.value) {
-        observer.observe(loadMoreTrigger.value);
-      }
-    });
-
-    return {
-      transactions,
-      loadMoreTrigger,
-      startTouch,
-      moveTouch,
-      endTouch,
-      handleFabAction,
-    };
-  },
+const startTouch = (event: TouchEvent, transaction: Transaction) => {
+  touchStartX.value = event.changedTouches[0].screenX;
+  currentTransaction.value = transaction;
 };
+
+const moveTouch = (event: TouchEvent) => {
+  touchEndX.value = event.changedTouches[0].screenX;
+};
+
+const endTouch = () => {
+  if (touchStartX.value - touchEndX.value > 50) {
+    // Swipe left - Edit
+    handleSwipeLeft(currentTransaction.value!);
+  } else if (touchEndX.value - touchStartX.value > 50) {
+    // Swipe right - Delete
+    handleSwipeRight(currentTransaction.value!);
+  }
+};
+
+const handleSwipeLeft = (transaction: Transaction) => {
+  router.push(`/edit-transaction/${transaction.id}`);
+};
+
+const handleSwipeRight = (transaction: Transaction) => {
+  if (confirm("Are you sure you want to delete this transaction?")) {
+    deleteTransaction(transaction.id);
+  }
+};
+
+const handleFabAction = (action: string) => {
+  if (action === "addTransaction") {
+    router.push("/add-transaction");
+  } else if (action === "manageAccounts") {
+    router.push("/accounts");
+  }
+};
+
+onMounted(async () => {
+  const authResponse = await checkAuth();
+  if (authResponse) {
+    await fetchTransactions();
+  } else {
+    console.error("User is not authenticated");
+  }
+});
+
+// Setup intersection observer for infinite scroll
+const observer = new IntersectionObserver(
+  async (entries) => {
+    if (entries[0].isIntersecting && hasMore.value) {
+      await loadMoreTransactions();
+    }
+  },
+  { threshold: 1.0 }
+);
+
+onMounted(() => {
+  if (loadMoreTrigger.value) {
+    observer.observe(loadMoreTrigger.value);
+  }
+});
 </script>
 
 <style scoped>

@@ -1,11 +1,7 @@
-export interface AuthProvider {
-  login(email: string, password: string): Promise<any>;
-  register(email: string, password: string): Promise<any>;
-}
+import type User from "@/models/user";
 
-export abstract class BaseAuth implements AuthProvider {
-  abstract login(email: string, password: string): Promise<any>;
-  abstract register(email: string, password: string): Promise<any>;
-  abstract getUser(): Promise<any>;
+export abstract class BaseAuth {
+  abstract login(email: string, password: string): Promise<User>;
+  abstract register(email: string, password: string): Promise<User>;
   abstract logout(): Promise<void>;
 }

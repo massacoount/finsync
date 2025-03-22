@@ -9,11 +9,14 @@ import AddAccount from '@/components/finance/AddAccount.vue';
 import AddTransaction from '@/pages/finance/AddTransaction.vue';
 import Settings from '@/pages/dashboard/Settings.vue';
 import Profile from '@/pages/dashboard/Profile.vue';
+import { authGuard } from '@/router/guards/auth.guard';
 
 const dashboardRoutes: RouteRecordRaw[] = [
   {
     path: '/',
     component: DashboardLayout,
+    beforeEnter: authGuard,
+    meta: { requiresAuth: true },
     children: [
       { path: '', component: Dashboard },
       { path: 'add-expense', component: AddExpense },

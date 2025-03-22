@@ -150,12 +150,12 @@ export default class OAuthService {
 
     const client = await this.getClient(client_id, client_secret);
     if (!client || !client.grants.includes("password")) {
-      return res.status(401).json({ error: "invalid_client" });
+      return res.status(400).json({ error: "invalid_client" });
     }
 
     const user = await this.getUser(username, password);
     if (!user) {
-      return res.status(401).json({ error: "invalid_grant" });
+      return res.status(400).json({ error: "invalid_user" });
     }
 
     const validScope = await this.validateScope(user, client, scope);

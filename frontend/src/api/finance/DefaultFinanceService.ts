@@ -13,14 +13,14 @@ export default class DefaultFinanceService extends BaseFinanceService {
         throw new Error("Method not implemented.");
     }
     getTransactions(): Promise<any> {
-        return axios.get(`${apiConfig.baseUrl}/api/transactions`)
+        return axios.get(`${apiConfig.baseUrl}/transactions`)
             .then(response => response.data)
             .catch(error => {
                 throw new Error(error.response?.data?.message || 'Failed to get transactions');
             });
     }
     deleteTransaction(id: string): Promise<void> {
-        return axios.delete(`${apiConfig.baseUrl}/api/transactions/${id}`)
+        return axios.delete(`${apiConfig.baseUrl}/transactions/${id}`)
             .then(() => {})
             .catch(error => {
                 throw new Error(error.response?.data?.message || 'Failed to delete transaction');

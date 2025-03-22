@@ -1,59 +1,42 @@
 import { defineStore } from "pinia";
-import { ref, reactive } from "vue";
+import { ref } from "vue";
 import { authService } from "@/api/authService";
 import { useNotifications } from "@/composables/useNotifications";
+import type User from "@/models/user";
 
 export const useAuthStore = defineStore("auth", () => {
-  const user = ref(null);
+  const user = ref<User | null>(null);
   const { addNotification } = useNotifications();
 
   const login = async (email: string, password: string) => {
     try {
       console.log("AuthService:", authService);
-      await authService.login(email, password);
-      user.value = await authService.getUser();
+      user.value = await authService.login(email, password);
     } catch (error) {
-      console.error("Login failed:", error);
       addNotification(
         "Login failed. Please check your credentials and try again.",
         "error"
       );
-      throw new Error(
-        "Login failed. Please check your credentials and try again."
-      );
     }
   };
-
   const logout = async () => {
     try {
       await authService.logout();
       user.value = null;
     } catch (error) {
-      console.error("Logout failed:", error);
       addNotification("Logout failed. Please try again.", "error");
-      throw new Error("Logout failed. Please try again.");
     }
   };
 
-  const checkAuth = async () => {
-    try {
-      user.value = await authService.getUser();
-      if (user.value) {
-        addNotification("User authenticated", "success");
-      } else {
-        addNotification("User not authenticated", "warning");
-      }
-      return user.value;
-    } catch (error) {
-      user.value = null;
-      console.error("Check auth failed:", error);
-    }
-  };
-
+  function hasRole(requiredRoles: string[]): boolean {
+    return (
+      user.value?.roles.some((role) => requiredRoles.includes(role)) ?? false
+    );
+  }
   return {
     user,
     login,
     logout,
-    checkAuth,
+    hasRole,
   };
 });

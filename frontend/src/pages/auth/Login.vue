@@ -1,11 +1,18 @@
 <template>
   <div class="min-h-screen flex items-center justify-center">
-    <div class="p-8 m-8 w-full border">
+    <div class="p-8 m-8 w-full max-w-sm bg-white shadow-md">
+      <img
+        src="/logo.svg"
+        alt="Finsync Logo"
+        class="w-16 h-16 mx-auto mb-4"
+      />
       <h2 class="text-2xl font-semibold mb-6 text-center">Finsync</h2>
       <p class="text-center mb-4">Login to sync your finances</p>
       <form @submit.prevent="handleLogin" class="space-y-4">
         <div>
-          <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+          <label for="email" class="block text-sm font-medium text-gray-700"
+            >Email</label
+          >
           <input
             id="email"
             v-model="email"
@@ -16,7 +23,9 @@
           />
         </div>
         <div>
-          <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+          <label for="password" class="block text-sm font-medium text-gray-700"
+            >Password</label
+          >
           <input
             id="password"
             v-model="password"
@@ -37,35 +46,24 @@
   </div>
 </template>
 
-<script>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuth } from '@/composables/useAuth';
+<script setup lang="ts">
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { useAuth } from "@/composables/useAuth";
 
-export default {
-  setup() {
-    const router = useRouter();
-    const { login } = useAuth();
-    const email = ref('');
-    const password = ref('');
+const router = useRouter();
+const { login } = useAuth();
+const email = ref("");
+const password = ref("");
 
-    const handleLogin = async () => {
-      try {
-        console.log('Logging in with:', email.value
-        , password.value);
-        await login(email.value, password.value);
-        // Redirect to dashboard or another page after successful login
-        router.push('/');
-      } catch (error) {
-        console.error('Login failed:', error);
-      }
-    };
-
-    return { email, password, handleLogin };
-  },
+const handleLogin = async () => {
+  try {
+    console.log("Logging in with:", email.value, password.value);
+    await login(email.value, password.value);
+    // Redirect to dashboard or another page after successful login
+    router.push("/");
+  } catch (error) {
+    console.error("Login failed:", error);
+  }
 };
 </script>
-
-<style scoped>
-/* Add any additional styles here */
-</style>

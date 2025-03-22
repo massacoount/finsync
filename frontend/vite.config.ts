@@ -13,13 +13,9 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
-    cors: true, // Enable CORS for the dev server
     proxy: {
-      '/api': {
+      '^/api': {
         target: 'http://localhost:3000',
-        changeOrigin: true,
-        secure: false,
-        selfHandleResponse: true,
       }
     }
   },
