@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-gray-100 font-sans">
+    <div class="bg-white p-8 rounded-lg shadow-md max-w-sm w-full">
+        <img src="/logo.svg" alt="Finsync Logo" class="block mx-auto mb-4 w-16 h-16" />
+        <h2 class="text-center text-2xl font-semibold mb-4">Finsync</h2>
+        <p class="text-center text-gray-500 mb-4">Login to sync your finances</p>
+        <form id="loginForm">
+            <label for="email" class="block mb-2 text-sm font-medium text-gray-700">Email</label>
+            <input
+                type="email"
+                id="email"
+                placeholder="Email"
+                required
+                class="w-full p-2 mb-4 border border-gray-300 rounded-md text-sm"
+            />
+            <label for="password" class="block mb-2 text-sm font-medium text-gray-700">Password</label>
+            <input
+                type="password"
+                id="password"
+                placeholder="Password"
+                required
+                class="w-full p-2 mb-4 border border-gray-300 rounded-md text-sm"
+            />
+            <button
+                type="submit"
+                class="w-full py-2 bg-blue-500 text-white rounded-md text-lg hover:bg-blue-600"
+            >
+                Login
+            </button>
+        </form>
+    </div>
+
+    <script>
+        document
+            .getElementById("loginForm")
+            .addEventListener("submit", async function (event) {
+                event.preventDefault();
+
+                const email = document.getElementById("email").value;
+                const password = document.getElementById("password").value;
+
+                console.log("Logging in with:", email, password);
+
+                try {
+                    // Simulate login logic
+                    await fakeLogin(email, password);
+                    alert("Login successful!");
+                    window.location.href = "/";
+                } catch (error) {
+                    console.error("Login failed:", error);
+                    alert("Login failed. Please try again.");
+                }
+            });
+
+        // Simulated fake login function (replace with real login logic)
+        async function fakeLogin(email, password) {
+            if (email === "test@example.com" && password === "password123") {
+                return true;
+            } else {
+                throw new Error("Invalid credentials");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -20,24 +20,24 @@ export default class OAuthService {
         "SELECT * FROM oauth_client WHERE client_id = ? AND client_secret = ?",
         [clientId, clientSecret]
       );
-      
+
       if (!client) {
-        this.logger.error('Client not found:', { clientId });
+        this.logger.error("Client not found:", { clientId });
         return null;
       }
-  
+
       // Ensure allowed_grants has a default value if undefined
-      const grants = client.allowed_grants 
-        ? JSON.parse(client.allowed_grants) 
-        : ['password'];
-  
+      const grants = client.allowed_grants
+        ? JSON.parse(client.allowed_grants)
+        : ["password"];
+
       return {
         id: client.client_id,
         grants,
-        redirectUris: [client.redirect_uri || ''],
+        redirectUris: [client.redirect_uri || ""],
       };
     } catch (error) {
-      this.logger.error('Error in getClient:', error);
+      this.logger.error("Error in getClient:", error);
       throw error;
     }
   }
@@ -145,17 +145,17 @@ export default class OAuthService {
     const { username, password, client_id, client_secret, scope } = req.body;
 
     if (!username || !password) {
-      return res.status(400).json({ error: "invalid_request" });
+      return res.status(400).json({ error: "Invalid User" });
     }
 
     const client = await this.getClient(client_id, client_secret);
     if (!client || !client.grants.includes("password")) {
-      return res.status(400).json({ error: "invalid_client" });
+      return res.status(400).json({ error: "Invalid Client" });
     }
 
     const user = await this.getUser(username, password);
     if (!user) {
-      return res.status(400).json({ error: "invalid_user" });
+      return res.status(400).json({ error: "Invalid User" });
     }
 
     const validScope = await this.validateScope(user, client, scope);
@@ -236,14 +236,32 @@ export default class OAuthService {
     return async (req, res, next) => {
       const authHeader = req.headers["authorization"];
       const token = authHeader && authHeader.split(" ")[1];
-
-      if (!token) return res.status(401).json({ error: "invalid_token" });
-
+      if (!token) return res.status(401).json({ error: "Un Authorized Client" });
       try {
         const request = new OAuth2Server.Request(req);
         const response = new OAuth2Server.Response(res);
         const tokenData = await this.oauth.authenticate(request, response);
-        req.user = tokenData.user;
+        if (tokenData.user) {
+          req.user = tokenData.user;
+        } else {
+          const jwtToken = req.cookies?.access_token || null;
+
+          if (!jwtToken) {
+            return res
+              .status(401)
+              .json({ message: "Un Authorized User" });
+          }
+
+          try {
+            const decoded = jwt.verify(jwtToken, FINSYNC_JWT_SECRET); 
+            req.user = decoded; 
+            next(); 
+          } catch (error) {
+            return res
+              .status(403)
+              .json({ message: "Forbidden User" });
+          }
+        }
         next();
       } catch (err) {
         this.logger.error("Authentication error:", err);

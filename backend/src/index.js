@@ -85,6 +85,11 @@ class FinsyncApp {
       this.util
     );
 
+    const loginController = new LoginController(
+      this.logger,
+      this.dbService
+    );
+    this.app.use('/login', loginController.router);
     this.app.use("/api/auth", oauthController.router);
     this.app.use(
       "/api/accounts",
