@@ -7,7 +7,7 @@ export class AuthFactory {
     console.log('Creating auth service for provider:', provider);
     switch (provider) {
       case 'appwrite':
-        throw new AppwriteAuth();
+        return new AppwriteAuth();
       default:
         return new DefaultAuth();
     }
