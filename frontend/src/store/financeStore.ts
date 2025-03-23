@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { financeService } from '@/api/financeService';
+import type { Transaction } from '@/types/finance';
 
 export const useFinanceStore = defineStore('finance', () => {
   //TODO: Define the store
@@ -33,7 +34,7 @@ export const useFinanceStore = defineStore('finance', () => {
    return [];
   };
 
-  const addTransaction = async (transactionData: any) => {
+  const addTransaction = async (transactionData: Transaction) => {
     try {
       const newTransaction = await financeService.addTransaction(transactionData);
       transactions.value.unshift(newTransaction);
@@ -55,7 +56,7 @@ export const useFinanceStore = defineStore('finance', () => {
     }
   };
 
-  const deleteTransaction = async (transactionId: number) => {
+  const deleteTransaction = async (transactionId: string) => {
     try {
       //await financeService.deleteTransaction(transactionId);
       transactions.value = transactions.value.filter(transaction => transaction.id !== transactionId);

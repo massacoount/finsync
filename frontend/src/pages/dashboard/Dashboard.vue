@@ -56,9 +56,10 @@
   </div>
 </template>
 
-<<script setup lang="ts">
+<script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import { useAuth } from "@/composables/useAuth";
 import { useFinance } from "@/composables/useFinance";
 import FloatingActionButton from "@/components/common/FloatingActionButton.vue";
 import type { Transaction } from "@/types/finance";
@@ -109,7 +110,7 @@ const handleFabAction = (action: string) => {
 };
 
 onMounted(async () => {
-  const authResponse = await checkAuth();
+  const authResponse = await useAuth().user;
   if (authResponse) {
     await fetchTransactions();
   } else {
@@ -120,7 +121,7 @@ onMounted(async () => {
 // Setup intersection observer for infinite scroll
 const observer = new IntersectionObserver(
   async (entries) => {
-    if (entries[0].isIntersecting && hasMore.value) {
+    if (entries[0].isIntersecting && hasMore) {
       await loadMoreTransactions();
     }
   },

@@ -1,6 +1,7 @@
 import { Client, Databases, Storage, ID, Query } from "appwrite";
 import { BaseFinanceService } from "./BaseFinanceService";
 import { appwriteConfig } from "@/config/appwrite";
+import type { Transaction } from "@/types/finance";
 
 const client = new Client();
 
@@ -25,14 +26,7 @@ export class AppwriteFinanceService extends BaseFinanceService {
     );
     return transactions.documents;
   }
-  async addTransaction(transactionData: {
-    date: Date;
-    amount: number;
-    accountFrom: string;
-    accountTo: string;
-    store: string;
-    remarks: string;
-  }) {
+  async addTransaction(transactionData: Transaction) {
     const addTransactionResponse = await databases.createDocument(
       DATABASE_ID,
       TRANSACTIONS_COLLECTION_ID,
