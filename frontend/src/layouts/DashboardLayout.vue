@@ -9,10 +9,10 @@
   </div>
 </template>
 
-<script>
-import Header from '@/components/layout/HeaderComponent.vue';
-import Sidebar from '@/components/layout/SidebarComponent.vue';
-import Footer from '@/components/layout/FooterComponent.vue';
+<script lang="ts">
+import HeaderComponent from '@/components/layout/HeaderComponent.vue';
+import SidebarComponent from '@/components/layout/SidebarComponent.vue';
+import FooterComponent from '@/components/layout/FooterComponent.vue';
 
 export default {
   name: 'DashboardLayout',
