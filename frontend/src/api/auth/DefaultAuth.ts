@@ -1,8 +1,8 @@
-import { apiConfig } from "@/config/api";
 import { BaseAuth } from "./BaseAuth";
 import { httpClient } from "../http-client";
 import type User from "@/models/user";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
+import { ApiError } from "../api-error";
 
 export class DefaultAuth extends BaseAuth {
   login(email: string, password: string): Promise<User> {
@@ -31,12 +31,10 @@ export class DefaultAuth extends BaseAuth {
         }
       )
       .then(async (response) => {
-        console.log("Login response:", response);
         const { data } = response;
         localStorage.setItem("access_token", data.access_token);
         localStorage.setItem("refresh_token", data.refresh_token);
         const userResponse = await this.getUser();
-        console.log("User response:", userResponse);
         const user: User = {
           id: "",
           accessToken: data.access_token,
@@ -56,14 +54,19 @@ export class DefaultAuth extends BaseAuth {
         };
         return user;
       })
-      .catch((error) => {
-        console.log("Error in fetching token", error);
-        throw new Error("Login failed");
+      .catch((error: AxiosError) => {
+        console.error("Error in fetching token", error);
+        if (error.response?.status === 400) {
+          throw new ApiError("Invalid username or password", "warning");
+        } else if (error.response?.status === 401) {
+          throw new ApiError("Invalid credentials", "warning");
+        }
+        throw new ApiError("Unknown error occurred", "error");
       });
   }
 
   register(email: string, password: string): Promise<User> {
-    console.log("Register method not implemented", email, password);
+    console.debug("Register method not implemented", email, password);
     throw new Error("Method not implemented.");
   }
 

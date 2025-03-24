@@ -3,7 +3,7 @@ import { DefaultAuth } from './DefaultAuth';
 
 export class AuthFactory {
   static createAuthService(provider: string): BaseAuth {
-    console.log('Creating auth service for provider:', provider);
+    console.debug('Creating auth service for provider:', provider);
     switch (provider) {
       default:
         return new DefaultAuth();
