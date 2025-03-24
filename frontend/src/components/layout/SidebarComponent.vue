@@ -61,7 +61,7 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 export default {
   methods: {
     logout() {
@@ -76,22 +76,22 @@ export default {
 
     if (openSidebar) {
       openSidebar.addEventListener('click', () => {
-        sidebar.classList.remove('-translate-x-full');
-        overlay.classList.remove('hidden');
+        sidebar?.classList.remove('-translate-x-full');
+        overlay?.classList.remove('hidden');
       });
     }
 
     if (closeSidebar) {
       closeSidebar.addEventListener('click', () => {
-        sidebar.classList.add('-translate-x-full');
-        overlay.classList.add('hidden');
+        sidebar?.classList.add('-translate-x-full');
+        overlay?.classList.add('hidden');
       });
     }
 
     if (overlay) {
       overlay.addEventListener('click', () => {
-        sidebar.classList.add('-translate-x-full');
-        overlay.classList.add('hidden');
+        sidebar?.classList.add('-translate-x-full');
+        overlay?.classList.add('hidden');
       });
     }
   }

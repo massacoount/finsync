@@ -1,7 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router';
 import DashboardLayout from '@/layouts/DashboardLayout.vue';
 import DashboardPage from '@/pages/dashboard/DashboardPage.vue';
-import TransactionAddPage from '@/pages/finance/TransactionAddPage.vue';
+import TransactionAddPage from '@/pages/finance/transactions/TransactionAddPage.vue';
 import SettingsPage from '@/pages/dashboard/SettingsPage.vue';
 import ProfilePage from '@/pages/dashboard/ProfilePage.vue';
 import { authGuard } from '@/router/guards/auth.guard';
