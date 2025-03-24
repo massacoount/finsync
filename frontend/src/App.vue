@@ -1,16 +1,16 @@
 <template>
   <div>
     <router-view />
-    <Notifications />
+    <NotificationAlert />
   </div>
 </template>
 
 <script>
-import Notifications from '@/components/common/Notifications.vue';
+import NotificationAlert from '@/components/common/NotificationAlert.vue';
 
 export default {
   components: {
-    Notifications,
+    NotificationAlert,
   },
 };
 </script>

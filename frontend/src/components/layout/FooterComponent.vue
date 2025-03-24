@@ -14,11 +14,3 @@
     </router-link>
   </footer>
 </template>
-
-<script>
-export default {};
-</script>
-
-<style scoped>
-/* Add any additional styles here */
-</style>

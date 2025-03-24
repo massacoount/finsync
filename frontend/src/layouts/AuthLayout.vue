@@ -11,7 +11,3 @@ export default {
   name: 'AuthLayout',
 };
 </script>
-
-<style scoped>
-/* Add any additional styles here */
-</style>

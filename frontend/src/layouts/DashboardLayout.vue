@@ -1,29 +1,25 @@
 <template>
   <div class="dashboard">
-    <Header />
-    <Sidebar />
+    <HeaderComponent />
+    <SidebarComponent />
     <main class="p-4">
       <router-view />
     </main>
-    <Footer />
+    <FooterComponent />
   </div>
 </template>
 
 <script>
-import Header from '@/components/layout/Header.vue';
-import Sidebar from '@/components/layout/Sidebar.vue';
-import Footer from '@/components/layout/Footer.vue';
+import Header from '@/components/layout/HeaderComponent.vue';
+import Sidebar from '@/components/layout/SidebarComponent.vue';
+import Footer from '@/components/layout/FooterComponent.vue';
 
 export default {
   name: 'DashboardLayout',
   components: {
-    Header,
-    Sidebar,
-    Footer
+    HeaderComponent,
+    SidebarComponent,
+    FooterComponent
   }
 };
 </script>
-
-<style scoped>
-/* Add any additional styles here */
-</style>
