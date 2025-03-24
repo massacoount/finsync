@@ -65,8 +65,8 @@ export class DefaultAuth extends BaseAuth {
       });
   }
 
-  register(email: string, password: string): Promise<User> {
-    console.debug("Register method not implemented", email, password);
+  register(user: Partial<User>, password: string): Promise<User> {
+    console.debug("Register method not implemented", user, password);
     throw new Error("Method not implemented.");
   }
 

@@ -36,18 +36,19 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { ref } from 'vue';
 import { useAuth } from '@/composables/useAuth';
 
 export default {
   setup() {
-    const { registerAction } = useAuth();
+    const { register } = useAuth();
+    const name = ref('')
     const email = ref('');
     const password = ref('');
 
     const handleRegister = async () => {
-      await registerAction({ email: email.value, password: password.value });
+      await register({name: name.value, email: email.value}, password.value);
     };
 
     return { email, password, handleRegister };

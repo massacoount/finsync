@@ -45,19 +45,37 @@ export const useAuthStore = defineStore("auth", () => {
         );
       }
     }
-  };
+   }
 
+    const register = async (user: Partial<User>, password: string) => {
+      try {
+        await authService.register(user, password)
+      } catch (error: unknown) {
+        if (error instanceof ApiError) {
+          addNotification(
+            error.message,
+            error.level
+          );
+        } else {
+          addNotification(
+            "An unknown error occurred.",
+            "error"
+          );
+        }
+      }
+    };
 
-
-  function hasRole(requiredRoles: string[]): boolean {
+  const hasRole = (requiredRoles: string[]) => {
     return (
       user.value?.roles.some((role: string) => requiredRoles.includes(role)) ?? false
     );
   }
+
   return {
     user,
     login,
     logout,
     hasRole,
+    register
   };
 });
