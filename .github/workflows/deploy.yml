@@ -20,16 +20,6 @@ jobs:
       - name: Build frontend
         working-directory: ./frontend
         run: yarn run build
-      - name: Upload frontend Build Artifacts
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.W1_HOST }}
-          port: ${{ secrets.W1_PORT }}
-          username: ${{ secrets.W1_USERNAME }}
-          password: ${{ secrets.W1_PASSWORD }}
-          source: "frontend/dist/*"
-          target: "${{ secrets.W1_FE_DEPLOY_PATH }}"
-          strip_components: 2
       - name: Setup Application
         uses: appleboy/ssh-action@v0.1.4
         with:
@@ -41,3 +31,13 @@ jobs:
             cd ${{ secrets.W1_PATH }}/setup
             ./script.sh
             echo "Deployment successful!"
+      - name: Upload frontend Build Artifacts
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.W1_HOST }}
+          port: ${{ secrets.W1_PORT }}
+          username: ${{ secrets.W1_USERNAME }}
+          password: ${{ secrets.W1_PASSWORD }}
+          source: "frontend/dist/*"
+          target: "${{ secrets.W1_FE_DEPLOY_PATH }}"
+          strip_components: 2
