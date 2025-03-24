@@ -126,6 +126,7 @@ class FinsyncApp {
       } else if (accept.includes("text/plain")) {
         res.status(code).send(error.message);
       } else {
+        code = code == 404 ? 'index' : code
         const errorPagePath = path.resolve(__dirname, `../public/${code}.html`);
 
         res.status(code).sendFile(errorPagePath, (err) => {
