@@ -11,6 +11,7 @@ import AccountController from "./controllers/account.js";
 import TransactionController from "./controllers/transaction.js";
 import TagController from "./controllers/tag.js";
 import BudgetController from "./controllers/budget.js";
+import LoginController from "./controllers/login.js"
 import swaggerUi from "swagger-ui-express";
 import YAML from "yamljs";
 import path from "path";
