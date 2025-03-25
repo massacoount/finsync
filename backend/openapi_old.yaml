@@ -1,0 +1,450 @@
+openapi: 3.0.0
+info:
+  title: Finsync API
+  version: 1.0.0
+  description: API for managing activities in finsync.
+
+servers:
+  - url: /
+    description: Default server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Account:
+      type: object
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        account_name:
+          type: string
+        opening_balance:
+          type: number
+          format: float
+        current_balance:
+          type: number
+          format: float
+        account_type:
+          type: string
+          enum: [CHECKING, SAVINGS, CREDIT, INVESTMENT]
+        opening_date:
+          type: string
+          format: date
+
+    Transaction:
+      type: object
+      properties:
+        transaction_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        description:
+          type: string
+        amount:
+          type: number
+          format: float
+        from_account_id:
+          type: string
+          format: uuid
+        to_account_id:
+          type: string
+          format: uuid
+        category_id:
+          type: string
+          format: uuid
+        tag_id:
+          type: string
+          format: uuid
+        transaction_date:
+          type: string
+          format: date-time
+
+    Tag:
+      type: object
+      properties:
+        tag_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        tag_name:
+          type: string
+
+    Budget:
+      type: object
+      properties:
+        budget_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        category_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: float
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/auth/authorize:
+    get:
+      summary: 'Authorize'
+      description: 'Authorize a user'
+      responses:
+        '302':
+          description: 'Redirect to the client with authorization code'
+        '400':
+          description: 'Invalid request'
+        '500':
+          description: 'Internal server error'
+  /api/auth/token:
+    post:
+      summary: 'Token'
+      description: 'Get an access token'
+      requestBody:
+        content:
+          'application/x-www-form-urlencoded':
+            schema:
+              type: 'object'
+              properties:
+                grant_type:
+                  type: 'string'
+                username:
+                  type: 'string'
+                password:
+                  type: 'string'
+                client_id:
+                  type: 'string'
+                client_secret:
+                  type: 'string'
+                scope:
+                  type: 'string'
+              required:
+                - grant_type
+                - username
+                - password
+                - client_id
+                - client_secret
+      responses:
+        '200':
+          description: 'Access token'
+          content:
+            'application/json':
+              schema:
+                type: 'object'
+                properties:
+                  access_token:
+                    type: 'string'
+                  token_type:
+                    type: 'string'
+                  expires_in:
+                    type: 'integer'
+                  refresh_token:
+                    type: 'string'
+                  scope:
+                    type: 'string'
+        '400':
+          description: 'Invalid request'
+        '401':
+          description: 'Invalid client or user credentials'
+        '500':
+          description: 'Internal server error'
+  /api/auth/userinfo:
+    get:
+      summary: 'User Info'
+      description: 'Get user information'
+      responses:
+        '200':
+          description: 'User information'
+          content:
+            'application/json':
+              schema:
+                type: 'object'
+                properties:
+                  sub:
+                    type: 'string'
+                  name:
+                    type: 'string'
+                  email:
+                    type: 'string'
+                  email_verified:
+                    type: 'boolean'
+        '401':
+          description: 'Unauthorized'
+        '500':
+          description: 'Internal server error'
+  /api/accounts:
+    get:
+      summary: List all accounts
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:    
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Account'
+    post:
+      summary: Create a new account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Account'
+      responses:
+        '201':
+          description: Account created
+  /api/accounts/{accountId}:
+    get:
+      summary: Get a specific account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:    
+              schema:
+                $ref: '#/components/schemas/Account'
+    put:
+      summary: Update an account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Account'
+      responses:
+        '200':
+          description: Account updated
+    delete:
+      summary: Delete an account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Account deleted
+  /api/transactions:
+    get:
+      summary: List all transactions
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:    
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+    post:
+      summary: Create a new transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Transaction'
+      responses:
+        '201':
+          description: Transaction created
+  /api/transactions/{transactionId}:
+    get:
+      summary: Get a specific transaction
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:    
+              schema:
+                $ref: '#/components/schemas/Transaction'
+    put:
+      summary: Update a transaction
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Transaction'
+      responses:
+        '200':
+          description: Transaction updated
+    delete:
+      summary: Delete a transaction
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Transaction deleted
+  /api/tags:
+    get:
+      summary: List all tags
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:    
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+    post:
+      summary: Create a new tag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tag'
+      responses:
+        '201':
+          description: Tag created
+  /api/tags/{tagId}:
+    put:
+      summary: Update a tag
+      parameters:
+        - name: tagId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tag'
+      responses:
+        '200':
+          description: Tag updated
+    delete:
+      summary: Delete a tag
+      parameters:
+        - name: tagId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Tag deleted
+  /api/budgets:
+    get:
+      summary: List all budgets
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:    
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Budget'
+    post:
+      summary: Create a new budget
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Budget'
+      responses:
+        '201':
+          description: Budget created
+  /api/budgets/{budgetId}:
+    get:
+      summary: Get a specific budget
+      parameters:
+        - name: budgetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:    
+              schema:
+                $ref: '#/components/schemas/Budget'
+    put:
+      summary: Update a budget
+      parameters:
+        - name: budgetId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Budget'
+      responses:
+        '200':
+          description: Budget updated
+    delete:
+      summary: Delete a budget
+      parameters:
+        - name: budgetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Budget deleted

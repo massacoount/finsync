@@ -14,39 +14,116 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-
+    oauth2:
+      type: oauth2
+      description: |
+        OAuth2 Authorization Code Flow.
+        The client will be redirected to the authorization server for authentication and authorization.
+      flows:
+        authorizationCode:
+          authorizationUrl: /api/auth/authorize
+          tokenUrl: /api/auth/token
+          scopes:
+            read: Grants read access to user's data
+            write: Grants write access to user's data
+            admin: Grants administrative access to user's data
   schemas:
+    TokenRequest:
+      type: object
+      properties:
+        grantType:
+          type: string
+          enum: [authorization_code, refresh_token, password]
+        code:
+          type: string
+        redirectUri:
+          type: string
+        clientId:
+          type: string
+        clientSecret:
+          type: string
+        refreshToken:
+          type: string
+
+    TokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          readOnly: true
+        tokenType:
+          type: string
+          readOnly: true
+        expiresIn:
+          type: integer
+          readOnly: true
+        refreshToken:
+          type: string
+          readOnly: true
+        scope:
+          type: string
+          readOnly: true
+
+    User:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
     Account:
       type: object
       properties:
-        account_id:
+        accountId:
           type: string
           format: uuid
-        user_id:
+          readOnly: true
+        userId:
           type: string
           format: uuid
-        account_name:
+        accountName:
           type: string
-        opening_balance:
+        openingBalance:
           type: number
           format: float
-        current_balance:
+        currentBalance:
           type: number
           format: float
-        account_type:
+        accountType:
           type: string
           enum: [CHECKING, SAVINGS, CREDIT, INVESTMENT]
-        opening_date:
+        openingDate:
           type: string
           format: date
 
     Transaction:
       type: object
       properties:
-        transaction_id:
+        transactionId:
           type: string
           format: uuid
-        user_id:
+          readOnly: true
+        userId:
           type: string
           format: uuid
         description:
@@ -54,53 +131,55 @@ components:
         amount:
           type: number
           format: float
-        from_account_id:
+        fromAccountId:
           type: string
           format: uuid
-        to_account_id:
+        toAccountId:
           type: string
           format: uuid
-        category_id:
+        categoryId:
           type: string
           format: uuid
-        tag_id:
+        tagId:
           type: string
           format: uuid
-        transaction_date:
+        transactionDate:
           type: string
           format: date-time
 
     Tag:
       type: object
       properties:
-        tag_id:
+        tagId:
           type: string
           format: uuid
-        user_id:
+          readOnly: true
+        userId:
           type: string
           format: uuid
-        tag_name:
+        tagName:
           type: string
 
     Budget:
       type: object
       properties:
-        budget_id:
+        budgetId:
           type: string
           format: uuid
-        user_id:
+          readOnly: true
+        userId:
           type: string
           format: uuid
-        category_id:
+        categoryId:
           type: string
           format: uuid
         amount:
           type: number
           format: float
-        start_date:
+        startDate:
           type: string
           format: date
-        end_date:
+        endDate:
           type: string
           format: date
 
@@ -110,103 +189,158 @@ security:
 paths:
   /api/auth/authorize:
     get:
-      summary: 'Authorize'
-      description: 'Authorize a user'
+      summary: "Authorize"
+      description: "Authorize a user using OAuth2"
+      parameters:
+        - name: responseType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [code]
+          description: "The type of response desired, typically 'code' for authorization code flow."
+        - name: clientId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: "The client Id of the application making the request."
+        - name: redirectUri
+          in: query
+          required: true
+          schema:
+           type: string
+          description: "The URI to redirect the user to after authorization."
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "The scope of the access request."
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "An opaque value used to maintain state between the request and callback."
       responses:
-        '302':
-          description: 'Redirect to the client with authorization code'
-        '400':
-          description: 'Invalid request'
-        '500':
-          description: 'Internal server error'
+        "302":
+          description: "Redirect to the client with authorization code"
+          headers:
+            Location:
+              description: URL to redirect to with the authorization code and state
+              schema:
+                type: string
+                format: uri
+        "400":
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized (e.g., invalid client_id or client secret)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden (e.g., user denies access)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /api/auth/token:
     post:
-      summary: 'Token'
-      description: 'Get an access token'
+      summary: "Token"
+      description: "Exchange authorization code or refresh token for an access token"
       requestBody:
+        required: true
         content:
-          'application/x-www-form-urlencoded':
+          application/x-www-form-urlencoded:
             schema:
-              type: 'object'
-              properties:
-                grant_type:
-                  type: 'string'
-                username:
-                  type: 'string'
-                password:
-                  type: 'string'
-                client_id:
-                  type: 'string'
-                client_secret:
-                  type: 'string'
-                scope:
-                  type: 'string'
-              required:
-                - grant_type
-                - username
-                - password
-                - client_id
-                - client_secret
+              $ref: "#/components/schemas/TokenRequest"
       responses:
-        '200':
-          description: 'Access token'
+        "200":
+          description: "Access token"
           content:
-            'application/json':
+            application/json:
               schema:
-                type: 'object'
-                properties:
-                  access_token:
-                    type: 'string'
-                  token_type:
-                    type: 'string'
-                  expires_in:
-                    type: 'integer'
-                  refresh_token:
-                    type: 'string'
-                  scope:
-                    type: 'string'
-        '400':
-          description: 'Invalid request'
-        '401':
-          description: 'Invalid client or user credentials'
-        '500':
-          description: 'Internal server error'
+                $ref: "#/components/schemas/TokenResponse"
+        "400":
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Invalid client or user credentials"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /api/auth/userinfo:
     get:
-      summary: 'User Info'
-      description: 'Get user information'
+      summary: "User Info"
+      description: "Get user information using the access token"
+      security:
+        - bearerAuth: []
+        - oauth2: []
       responses:
-        '200':
-          description: 'User information'
+        "200":
+          description: "User information"
           content:
-            'application/json':
+            application/json:
               schema:
-                type: 'object'
-                properties:
-                  sub:
-                    type: 'string'
-                  name:
-                    type: 'string'
-                  email:
-                    type: 'string'
-                  email_verified:
-                    type: 'boolean'
-        '401':
-          description: 'Unauthorized'
-        '500':
-          description: 'Internal server error'
+                $ref: "#/components/schemas/User"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /api/accounts:
     get:
       summary: List all accounts
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
-            application/json:    
+            application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Account'
+                  $ref: "#/components/schemas/Account"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     post:
       summary: Create a new account
       requestBody:
@@ -214,10 +348,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Account'
+              $ref: "#/components/schemas/Account"
       responses:
-        '201':
+        "200":
           description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400":
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /api/accounts/{accountId}:
     get:
       summary: Get a specific account
@@ -228,12 +384,30 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
-            application/json:    
+            application/json:
               schema:
-                $ref: '#/components/schemas/Account'
+                $ref: "#/components/schemas/Account"
+        "400":
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     put:
       summary: Update an account
       parameters:
@@ -247,10 +421,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Account'
+              $ref: "#/components/schemas/Account"
       responses:
-        '200':
+        "200":
           description: Account updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400":
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     delete:
       summary: Delete an account
       parameters:
@@ -260,20 +456,50 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Account deleted
+        "400":
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /api/transactions:
     get:
       summary: List all transactions
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
-            application/json:    
+            application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Transaction'
+                  $ref: "#/components/schemas/Transaction"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     post:
       summary: Create a new transaction
       requestBody:
@@ -281,10 +507,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Transaction'
+              $ref: "#/components/schemas/Transaction"
       responses:
-        '201':
+        "200":
           description: Transaction created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /api/transactions/{transactionId}:
     get:
       summary: Get a specific transaction
@@ -295,12 +543,30 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
-            application/json:    
+            application/json:
               schema:
-                $ref: '#/components/schemas/Transaction'
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     put:
       summary: Update a transaction
       parameters:
@@ -314,10 +580,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Transaction'
+              $ref: "#/components/schemas/Transaction"
       responses:
-        '200':
+        "200":
           description: Transaction updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     delete:
       summary: Delete a transaction
       parameters:
@@ -327,20 +615,50 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Transaction deleted
+        "400":
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /api/tags:
     get:
       summary: List all tags
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
-            application/json:    
+            application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Tag'
+                  $ref: "#/components/schemas/Tag"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     post:
       summary: Create a new tag
       requestBody:
@@ -348,10 +666,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Tag'
+              $ref: "#/components/schemas/Tag"
       responses:
-        '201':
+        "200":
           description: Tag created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+        "400":
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /api/tags/{tagId}:
     put:
       summary: Update a tag
@@ -366,10 +706,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Tag'
+              $ref: "#/components/schemas/Tag"
       responses:
-        '200':
+        "200":
           description: Tag updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+        "400":
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     delete:
       summary: Delete a tag
       parameters:
@@ -379,20 +741,50 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Tag deleted
+        "400":
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /api/budgets:
     get:
       summary: List all budgets
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
-            application/json:    
+            application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Budget'
+                  $ref: "#/components/schemas/Budget"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     post:
       summary: Create a new budget
       requestBody:
@@ -400,10 +792,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Budget'
+              $ref: "#/components/schemas/Budget"
       responses:
-        '201':
+        "201":
           description: Budget created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Budget"
+        "400":
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /api/budgets/{budgetId}:
     get:
       summary: Get a specific budget
@@ -414,12 +828,30 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
-            application/json:    
+            application/json:
               schema:
-                $ref: '#/components/schemas/Budget'
+                $ref: "#/components/schemas/Budget"
+        "400":
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     put:
       summary: Update a budget
       parameters:
@@ -433,10 +865,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Budget'
+              $ref: "#/components/schemas/Budget"
       responses:
-        '200':
+        "200":
           description: Budget updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Budget"
+        "400":
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     delete:
       summary: Delete a budget
       parameters:
@@ -446,5 +900,23 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Budget deleted
+        "400":
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
