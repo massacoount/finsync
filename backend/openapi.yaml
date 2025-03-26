@@ -31,33 +31,33 @@ components:
     TokenRequest:
       type: object
       properties:
-        grantType:
+        grant_type:
           type: string
           enum: [authorization_code, refresh_token, password]
         code:
           type: string
-        redirectUri:
+        redirect_uri:
           type: string
-        clientId:
+        client_id:
           type: string
-        clientSecret:
+        client_secret:
           type: string
-        refreshToken:
+        refresh_token:
           type: string
 
     TokenResponse:
       type: object
       properties:
-        accessToken:
+        access_token:
           type: string
           readOnly: true
-        tokenType:
+        token_type:
           type: string
           readOnly: true
-        expiresIn:
+        expires_in:
           type: integer
           readOnly: true
-        refreshToken:
+        refresh_token:
           type: string
           readOnly: true
         scope:
@@ -67,19 +67,19 @@ components:
     User:
       type: object
       properties:
-        userId:
+        user_id:
           type: string
           format: uuid
           readOnly: true
-        username:
+        user_name:
           type: string
         email:
           type: string
-        firstName:
+        first_name:
           type: string
-        lastName:
+        last_name:
           type: string
-        dateOfBirth:
+        dob:
           type: string
           format: date
 
@@ -94,36 +94,36 @@ components:
     Account:
       type: object
       properties:
-        accountId:
+        account_id:
           type: string
           format: uuid
           readOnly: true
-        userId:
+        user_id:
           type: string
           format: uuid
-        accountName:
+        account_name:
           type: string
-        openingBalance:
+        opening_balance:
           type: number
           format: float
-        currentBalance:
+        current_balance:
           type: number
           format: float
-        accountType:
+        account_type:
           type: string
           enum: [CHECKING, SAVINGS, CREDIT, INVESTMENT]
-        openingDate:
+        openting_date:
           type: string
           format: date
 
     Transaction:
       type: object
       properties:
-        transactionId:
+        transaction_id:
           type: string
           format: uuid
           readOnly: true
-        userId:
+        user_id:
           type: string
           format: uuid
         description:
@@ -131,57 +131,77 @@ components:
         amount:
           type: number
           format: float
-        fromAccountId:
+        from_account_id:
           type: string
           format: uuid
-        toAccountId:
+        to_account_id:
           type: string
           format: uuid
-        categoryId:
+        category_id:
           type: string
           format: uuid
-        tagId:
+        tag_id:
           type: string
           format: uuid
-        transactionDate:
+        date:
           type: string
           format: date-time
 
     Tag:
       type: object
       properties:
-        tagId:
+        tag_id:
           type: string
           format: uuid
           readOnly: true
-        userId:
+        user_id:
           type: string
           format: uuid
-        tagName:
+        tag_name:
           type: string
 
     Budget:
       type: object
       properties:
-        budgetId:
+        buddget_id:
           type: string
           format: uuid
           readOnly: true
-        userId:
+        user_id:
           type: string
           format: uuid
-        categoryId:
+        category_id:
           type: string
           format: uuid
         amount:
           type: number
           format: float
-        startDate:
+        start_date:
           type: string
           format: date
-        endDate:
+        end_date:
           type: string
           format: date
+    LedgerEntry:
+       type: object
+       properties:
+          ledger_entry_id:
+            type: string
+            format: uuid
+            readOnly: true
+          user_id:
+            type: string
+            format: uuid
+          date:
+            type: string
+            format: date
+          description:
+            type: string
+          amount:
+            type: number
+            format: float
+          status:
+            type: string
 
 security:
   - bearerAuth: []
@@ -192,20 +212,20 @@ paths:
       summary: "Authorize"
       description: "Authorize a user using OAuth2"
       parameters:
-        - name: responseType
+        - name: response_type
           in: query
           required: true
           schema:
             type: string
             enum: [code]
           description: "The type of response desired, typically 'code' for authorization code flow."
-        - name: clientId
+        - name: client_id
           in: query
           required: true
           schema:
             type: string
           description: "The client Id of the application making the request."
-        - name: redirectUri
+        - name: redirect_uri
           in: query
           required: true
           schema:
